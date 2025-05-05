@@ -34,7 +34,7 @@ struct LineDivider {};
     float alphaBrightness = (float)(0.01F);
     Vec3 colorOfSamples1 = (Vec3)(Vec3 {.ind={0.0, 0.85, 1.0}});
     Vec3 colorOfSamples2 = (Vec3)(Vec3 {.ind={0.0, 1.0, 0.0}});
-    SelectionList displayType = SelectionList{0, {"Lines", "Scatter"}};
+    SelectionList displayType = SelectionList{0, {"Lines", "Scatter", "Histogram"}};
     LineDivider lineDivNormalModeWaveFunc = LineDivider{};
     Label labelNormalModeWaveFunc = Label{};
     bool colorPhase = (bool)(false);

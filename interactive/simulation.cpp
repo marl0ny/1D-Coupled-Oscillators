@@ -16,20 +16,14 @@ typedef std::vector<int> ArrI1D;
 #define PI 3.141592653589793
 
 
-static void add_data_point(Histogram2D hist, double x, double y, double val) {
+static void add_data_point(Histogram2D &hist, double x, double y, double val) {
     // x = min_val.x + range*(i/dimensions.x);
     // y = min_val.y + range*(j/dimensions.y);
     int i = double(hist.dimensions.x)*(x - hist.min_val.x)/hist.range.x;
     int j = double(hist.dimensions.y)*(y - hist.min_val.y)/hist.range.y;
-    int ind = i*hist.dimensions[0] + j;
-    // for (int k = 0; k < 4; k++)
-    //     hist.arr[4*ind + k] = 1.0;
-    // if (i >= 0 && i < hist.dimensions.x && 
-    //     j >= 0 && j < hist.dimensions.y) {
-    //     // printf("%d\n", ind);
-    for (int k = 0; k < 4; k++)
-        hist.arr[4*ind + k] += val;
-    // }
+    int ind = j*hist.dimensions[0] + i;
+    if (ind >= 0 && ind < hist.arr.size())
+        hist.arr[ind] += val;
 }
 
 static double coherent_state_prod(
@@ -54,7 +48,6 @@ static double coherent_state_prod_dist_func(
     CoherentStateProdData *data = (CoherentStateProdData *)data_ptr;
     return coherent_state_prod(
         x, data->t, data->x0, data->p0, data->m, data->omega, data->hbar);
-
 }
 
 static double stationary_states_prod(
@@ -82,6 +75,35 @@ static double stationary_states_prod_dist_func(
     return stationary_states_prod(x, data->t, data->excitations,
          data->m, data->omega, data->hbar);
 }
+
+static double squeezed_state_prod(
+    const Arr1D &x, double t, 
+    const Arr1D &x0, const Arr1D &p0, const Arr1D &sigma0,
+    double m, const Arr1D &omega, double hbar
+) {
+    std::complex<double> prod = 1.0;
+    for (int i = 0; i < x.size(); i++)
+        prod *= squeezed_state(
+            x[i], t, x0[i], p0[i], 
+            sigma0[i], m, omega[i], hbar);
+    return abs(prod)*abs(prod);
+}
+
+struct SqueezedStateProdData {
+    double t, m, hbar;
+    Arr1D x0, p0, sigma0, omega;
+};
+
+static double squeezed_state_prod_dist_func(
+    const Arr1D &x, void *data_ptr
+) {
+    SqueezedStateProdData *data = (SqueezedStateProdData *)data_ptr;
+    return squeezed_state_prod(
+        x, data->t, data->x0, data->p0, 
+        data->sigma0, data->m, data->omega, data->hbar);
+}
+
+// struct squeezed_state_prod_dist()
 
 static void c_sq_matrix_mul(
     double *dst, const double *m, const double *v, int n) {
@@ -137,9 +159,9 @@ Frames::Frames(const SimParams &sim_params,
     ),
     hist_tex_params(
         {
-            .format=GL_RGBA32F,
+            .format=GL_R32F,
             .width=(uint32_t)sim_params.numberOfOscillators,
-            .height=(uint32_t)view_height,
+            .height=(uint32_t)view_height/4,
             .wrap_s=GL_REPEAT,
             .wrap_t=GL_REPEAT,
             .min_filter=GL_NEAREST,
@@ -170,6 +192,8 @@ GLSLPrograms::GLSLPrograms() {
     this->copy = Quad::make_program_from_path("./shaders/util/copy.frag");
     this->copy_r = Quad::make_program_from_path("./shaders/util/copy-r.frag");
     this->scale = Quad::make_program_from_path("./shaders/util/scale.frag");
+    this->height_map = Quad::make_program_from_path(
+        "./shaders/util/height-map.frag");
     this->modes = Quad::make_program_from_path("./shaders/modes.frag");
     this->configs_view = make_program_from_paths(
         "./shaders/configs-view.vert", "./shaders/util/uniform-color.frag");
@@ -191,9 +215,9 @@ Simulation::Simulation(
     m_initial_wf = Arr1D(n);
     Arr1D tmp (n);
     m_hist = {
-        .dimensions=IVec2{.ind{n, view_height}},
+        .dimensions=IVec2{.ind{n, (int)m_frames.hist_tex_params.height}},
         .min_val={.x=0.0, -20.0}, .range={.x=float(n), .y=40.0},
-        .arr=std::vector<float>(4*n*view_height)
+        .arr=std::vector<float>(n*m_frames.hist_tex_params.height)
     };
     for (int i = 0; i < n; i++)
         tmp[i] = 10.0*exp(-0.5*pow((double(i) - n/2.0)/(n*0.05), 2.0));
@@ -250,10 +274,41 @@ void Simulation::compute_configurations(SimParams &sim_params) {
 
 const RenderTarget &Simulation::render_view(
     const SimParams &sim_params) {
-    // m_frames.configs_view.clear();
-    /* glEnable(GL_BLEND);
+    m_frames.configs_view.clear();
+    glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-     {
+    if (sim_params.displayType.selected == 2) {
+        for (int i = 0; i < m_hist.arr.size(); i++)
+            m_hist.arr[i] = 0.0;
+        for (int k = 0; k < sim_params.numberOfMCSteps; k++) {
+            int n = sim_params.numberOfOscillators;
+            m_hist.min_val.y = -40.0;
+            m_hist.range.y = 80.0;
+            for (int j = 0; j < n; j++)
+                add_data_point(
+                    m_hist, 
+                    double(j), m_configs[n*k + j] - 20.0,
+                    sim_params.alphaBrightness);
+            m_hist.min_val.y = -20.0;
+            m_hist.range.y = 40.0;
+            Arr1D res = Arr1D(n);
+            c_sq_matrix_mul(
+                &res[0], &m_slow_dst[0], 
+                &m_configs[k*n], n);
+            c_copy(&m_configs[k*n], &res[0], n);
+            for (int j = 0; j < n; j++)
+                add_data_point(
+                    m_hist, 
+                    double(j), m_configs[n*k + j] + 10.0,
+                    sim_params.alphaBrightness);
+        }
+        m_frames.hist.set_pixels(&m_hist.arr[0]);
+        m_frames.configs_view.draw(
+            m_programs.height_map, 
+            {{"tex", &m_frames.hist}}, 
+            m_frames.quad_wire_frame
+        );
+    } else {
         WireFrame wire_frame = configs_view::get_configs_view_wire_frame(
             m_configs, 
             sim_params.numberOfMCSteps, 
@@ -270,41 +325,16 @@ const RenderTarget &Simulation::render_view(
             },
             wire_frame
         );
-    }*/
-    for (int k = 0; k < sim_params.numberOfMCSteps; k++) {
-        int n = sim_params.numberOfOscillators;
-        Arr1D res = Arr1D(n);
-        c_sq_matrix_mul(
-            &res[0], &m_slow_dst[0], 
-            &m_configs[k*n], n);
-        c_copy(&m_configs[k*n], &res[0], n);
+        for (int k = 0; k < sim_params.numberOfMCSteps; k++) {
+            int n = sim_params.numberOfOscillators;
+            Arr1D res = Arr1D(n);
+            c_sq_matrix_mul(
+                &res[0], &m_slow_dst[0], 
+                &m_configs[k*n], n);
+            c_copy(&m_configs[k*n], &res[0], n);
+        }
     }
-    for (int k = 0; k < sim_params.numberOfMCSteps; k++) {
-        int n = sim_params.numberOfOscillators;
-        for (int j = 0; j < n; j++) {
-            if (k == 0) {
-                double x = double(j);
-                double y = m_configs[n*k + j];
-                printf("%g, %g\n", x, y);
-                int i = double(m_hist.dimensions.x)*(x - m_hist.min_val.x)/m_hist.range.x;
-                int j = double(m_hist.dimensions.y)*(y - m_hist.min_val.y)/m_hist.range.y;
-                printf("%d, %d\n", i, j);
-            }
-            // for (int i = 0; i < 4; i++)
-            //     m_hist.arr[4*(k*n + j) + i] = 1.0;
-            add_data_point(
-                m_hist, 
-                double(j), m_configs[n*k + j],100.0);
-            }
-    }
-    m_frames.hist.set_pixels(&m_hist.arr[0]);
     m_frames.configs_view.draw(
-        m_programs.copy, 
-        {{"tex", &m_frames.hist}}, 
-        m_frames.quad_wire_frame
-    );
-
-    /* m_frames.configs_view.draw(
         m_programs.modes,
         {
             {"t", sim_params.t},
@@ -319,7 +349,8 @@ const RenderTarget &Simulation::render_view(
         },
         m_frames.quad_wire_frame
     );
-    {
+    if (sim_params.displayType.selected == 0 ||
+        sim_params.displayType.selected == 1) {
         WireFrame wire_frame = configs_view::get_configs_view_wire_frame(
             m_configs, sim_params.numberOfMCSteps,
             (sim_params.displayType.selected == 0)?
@@ -336,7 +367,7 @@ const RenderTarget &Simulation::render_view(
             wire_frame
         );
     }
-    glDisable(GL_BLEND);*/
+    glDisable(GL_BLEND);
     m_frames.view.draw(
         m_programs.scale,
         {
@@ -367,9 +398,9 @@ void Simulation::reset_oscillator_count(int number_of_oscillators) {
                 = 2.0*sin(PI*(i + 1)*(j + 1)/(n + 1))/sqrt(2.0*(n + 1));
     int view_height = m_frames.configs_view.texture_dimensions()[1];
     m_frames.hist_tex_params = {
-        .format=GL_RGBA32F,
+        .format=GL_R32F,
         .width=(uint32_t)number_of_oscillators,
-        .height=(uint32_t)view_height,
+        .height=(uint32_t)view_height/4,
         .wrap_s=GL_REPEAT,
         .wrap_t=GL_REPEAT,
         .min_filter=GL_NEAREST,
@@ -377,9 +408,9 @@ void Simulation::reset_oscillator_count(int number_of_oscillators) {
     };
     m_frames.hist.reset(m_frames.hist_tex_params);
     m_hist = {
-        .dimensions=IVec2{.ind{n, view_height}},
-        .min_val={.x=0.0, -20.0}, .range={.x=float(n), .y=-40.0},
-        .arr=std::vector<float>(4*n*view_height)
+        .dimensions=IVec2{.ind{n, (int)m_frames.hist_tex_params.height}},
+        .min_val={.x=0.0, -20.0}, .range={.x=float(n), .y=40.0},
+        .arr=std::vector<float>(n*m_frames.hist_tex_params.height)
     };
 }
 

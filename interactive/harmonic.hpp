@@ -30,6 +30,22 @@ std::complex<double> coherent_states_combination(
     std::vector<double> x0, std::vector<double> p0,
     double m, double omega, double hbar);
 
+/*
+If the initial wave function in a harmonic oscillator is a Gaussian at t=0,
+get it for all subsequent times by integrating this initial wave function 
+with the harmonic oscillator propagator.
+
+See equation 7.3.28 on pg 196 chapter 7 of Shankar for the formula for the
+harmonic oscillator propagator. In order to evaluate the integral of the
+initial Gaussian wave function with the propagator which also happens to take
+the form of a Gaussian, equations A.2.4 - A.2.5 in page 660 of the appendix
+of Shankar was consulted.
+*/
+std::complex<double> squeezed_state(
+    double x, double t, 
+    double x0, double p0, double sigma0,
+    double m, double omega, double hbar, bool omit_phase=true
+);
 
 #endif
 

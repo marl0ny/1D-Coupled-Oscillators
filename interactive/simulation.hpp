@@ -26,6 +26,7 @@ struct GLSLPrograms {
     uint32_t scale;
     uint32_t copy;
     uint32_t copy_r;
+    uint32_t height_map;
     uint32_t configs_view;
     uint32_t modes;
     GLSLPrograms();
@@ -46,6 +47,7 @@ class Simulation {
     // The above stores the transform matrix from going from position
     // to normal coordinates.
     std::vector<double> m_initial_wf;  // The initial wave function
+    std::vector<double> sigma;
     public:
     Simulation(const SimParams &sim_params,
         int view_width, int view_height);
