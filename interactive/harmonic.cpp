@@ -1,3 +1,11 @@
+/*Compute stationary states and various other states
+in the 1D harmonic oscillator. The main reference is
+
+Shankar R., "The Harmonic Oscillator,"
+in <i>Principles of Quantum Mechanics</i>, 2nd ed,
+Springer, 1994, ch. 7., pg 185-221.
+
+*/
 #include "harmonic.hpp"
 
 using std::complex;
@@ -6,7 +14,7 @@ using std::vector;
 #define PI 3.141592653589793
 
 
-static size_t factorial(size_t n) {
+static double factorial(double n) {
     return (n == 0)? 1: n*factorial(n - 1);
 }
 
@@ -16,12 +24,76 @@ See Shankar, pg. 195, 7.3.21 to obtain the base cases,
 then 7.3.35 for the recursive relation itself.
 */
 static double hermite(size_t n, double x) {
-    if (n == 0)
-        return 1.0;
-    else if (n == 1)
-        return 2.0*x;
-    else
-        return 2.0*x*hermite(n-1, x) - 2.0*(n-1)*hermite(n-2, x);
+    double x2 = x*x;
+    double x3 = x2*x;
+    double x4 = x2*x2;
+    double x5 = x4*x;
+    double x6 = x3*x3;
+    double x7 = x6*x;
+    double x8 = x4*x4;
+    double x9 = x8*x;
+    double x10 = x5*x5;
+    double x11 = x10*x;
+    double x12 = x6*x6;
+    double x13 = x12*x;
+    double x14 = x7*x7;
+    double x15 = x14*x;
+    double x16 = x8*x8;
+    double x17 = x16*x;
+    double x18 = x9*x9;
+    double x19 = x18*x;
+    switch(n) {
+        case 0: return 1;
+        case 1: return 2*x;
+        case 2: return 4*x2 - 2;
+        case 3: return 8*x3 - 12*x;
+        case 4: return 16*x4 - 48*x2 + 12;
+        case 5: return 32*x5 - 160*x3 + 120*x;
+        case 6: return 64*x6 - 480*x4 + 720*x2 - 120;
+        case 7: return 128*x7 - 1344*x5 + 3360*x3 - 1680*x;
+        case 8: return 256*x8 - 3584*x6 + 13440*x4 - 13440*x2 + 1680;
+        case 9: return 512*x9 - 9216*x7 + 48384*x5 - 80640*x3 + 30240*x;
+        case 10: 
+            return 1024*x10 - 23040*x8 + 161280*x6 
+                - 403200*x4 + 302400*x2 - 30240;
+        case 11: 
+            return 2048*x11 - 56320*x9 
+                + 506880*x7 - 1774080*x5 + 2217600*x3 - 665280*x;
+        case 12:
+            return 4096*x12 - 135168*x10 + 1520640*x8 
+                - 7096320*x6 + 13305600*x4 - 7983360*x2 + 665280;
+        case 13: 
+            return 8192*x13 - 319488*x11 + 4392960*x9 
+            - 26357760*x7 + 69189120*x5 - 69189120*x3 + 17297280*x;
+        case 14: 
+            return 16384*x14 - 745472*x12 + 12300288*x10 
+            - 92252160*x8 + 322882560*x6 - 484323840*x4 
+            + 242161920*x2 - 17297280;
+        case 15: 
+            return 32768*x15 - 1720320*x13 + 33546240*x11 
+            - 307507200*x9 + 1383782400*x7 - 2905943040*x5 
+            + 2421619200*x3 - 518918400*x;
+        case 16: 
+            return 65536*x16 - 3932160*x14 + 89456640*x12
+             - 984023040*x10 + 5535129600*x8 - 15498362880*x6 
+             + 19372953600*x4 - 8302694400*x2 + 518918400;
+        case 17: 
+            return 131072*x17 - 8912896*x15 + 233963520*x13 
+            - 3041525760*x11 + 20910489600*x9 - 75277762560*x7 
+            + 131736084480*x5 - 94097203200*x3 + 17643225600*x;
+        case 18: 
+            return 262144*x18 - 20054016*x16 + 601620480*x14 
+            - 9124577280*x12 + 75277762560*x10 - 338749931520*x8 
+            + 790416506880*x6 - 846874828800*x4 + 317578060800*x2 
+            - 17643225600;
+        case 19: 
+            return 524288*x19 - 44826624*x17 + 1524105216*x15 
+            - 26671841280*x13 + 260050452480*x11 - 1430277488640*x9 
+            + 4290832465920*x7 - 6436248698880*x5 + 4022655436800*x3 
+            - 670442572800*x;
+        default:
+        return 2.0*x*hermite(n-1, x) - 2.0*(n-1)*hermite(n-2, x);   
+    }
 }
 
 /* Energy eigenstates for the harmonic oscillator referenced from
@@ -132,11 +204,23 @@ std::complex<double> squeezed_state(
     double sigma4 = sigma0*sigma0*sigma0*sigma0;
     double x_t = x0*c + p0*s/(m*omega);
     double s_t = sqrt(hbar2*s*s + 4.0*m2*omega2*sigma4*c*c)
-        /(2.0*m*omega*sigma0);
+        /abs(2.0*m*omega*sigma0);
     std::complex<double> phase_factor = (omit_phase)?
         std::complex<double>(1.0, 0.0):
         squeezed_state_phase_factor(
             x, t, x0, p0, sigma0, m, omega, hbar);
     return exp(-0.25*pow((x - x_t)/s_t, 2.0))/sqrt(s_t*sqrt(2.0*PI))
         *phase_factor;
+}
+
+double squeezed_standard_dev(
+    double t,
+    double sigma0, double m, double omega, double hbar) {
+    double c = cos(t*omega), s = sin(t*omega);
+    double hbar2 = hbar*hbar;
+    double omega2 = omega*omega;
+    double sigma4 = sigma0*sigma0*sigma0*sigma0;
+    double m2 = m*m;
+    return sqrt(hbar2*s*s + 4.0*m2*omega2*sigma4*c*c)
+        /abs(2.0*m*omega*sigma0);
 }

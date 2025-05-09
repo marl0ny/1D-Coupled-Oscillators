@@ -1,3 +1,11 @@
+/*Compute stationary states and various other states
+in the 1D harmonic oscillator. The main reference is
+
+Shankar R., "The Harmonic Oscillator,"
+in <i>Principles of Quantum Mechanics</i>, 2nd ed,
+Springer, 1994, ch. 7., pg 185-221.
+
+*/
 #include <complex>
 #include <vector>
 
@@ -46,6 +54,10 @@ std::complex<double> squeezed_state(
     double x0, double p0, double sigma0,
     double m, double omega, double hbar, bool omit_phase=true
 );
+
+double squeezed_standard_dev(
+    double t,
+    double sigma0, double m, double omega, double hbar);
 
 #endif
 

@@ -1,3 +1,12 @@
+/*Visualization of various normal mode wave function states
+of the coupled harmonic oscillator. Each normal mode acts as an independent
+1D harmonic oscillator, where the formulas for the energy eigenstates and 
+other relevant states of the 1D system can be found in
+
+Shankar R., "The Harmonic Oscillator,"
+in <i>Principles of Quantum Mechanics</i>, 2nd ed,
+Springer, 1994, ch. 7., pg 185-221.
+*/
 #if (__VERSION__ >= 330) || (defined(GL_ES) && __VERSION__ >= 300)
 #define texture2D texture
 #else
@@ -27,6 +36,9 @@ uniform float offset;
 uniform float brightness;
 uniform sampler2D initialValuesTex;
 uniform int waveFunctionType;
+const int ALL_COHERENT = 0;
+const int ALL_SQUEEZED = 1;
+const int ENERGY_EIGENSTATE = 2;
 
 
 #define complex vec2
@@ -82,17 +94,106 @@ float hermite(int n, float x) {
             prev1 = 2.0*x;
         } else if (i > 1) {
             res = 2.0*(x*prev1 - float(i-1)*prev2);
-            prev1 = prev2, prev1 = res;
+            prev2 = prev1, prev1 = res;
         }
     }
     return res;
 }
 
-int factorial(int n) {
-    int res = 1, prev = 1;
-    for (int i = 0; i <= n; i++) {
+/*
+float hermite(int n, float x) {
+    float x2 = x*x, x3 = x2*x;
+    float x4 = x2*x2;
+    float x5 = x4*x;
+    float x6 = x3*x3;
+    float x7 = x6*x;
+    float x8 = x4*x4;
+    float x9 = x8*x;
+    float x10 = x5*x5;
+    float x11 = x10*x;
+    float x12 = x6*x6;
+    float x13 = x12*x;
+    float x14 = x7*x7;
+    float x15 = x14*x;
+    float x16 = x8*x8;
+    float x17 = x16*x;
+    float x18 = x9*x9;
+    float x19 = x18*x;
+    if (n == 0) return 1.0;
+    else if (n == 1) return 2.0*x;
+    else if (n == 2) return 4.0*x2 - 2.0;
+    else if (n == 3) return 8.0*x3 - 12.0*x;
+    else if (n == 4) return 16.0*x4 - 48.0*x2 + 12.0;
+    else if (n == 5) return 32.0*x5 - 160.0*x3 + 120.0*x;
+    else if (n == 6) return 64.0*x6 - 480.0*x4 + 720.0*x2 - 120.0;
+    else if (n == 7) return 128.0*x7 - 1344.0*x5 + 3360.0*x3 - 1680.0*x;
+    else if (n == 8) 
+        return 256.0*x8 - 3584.0*x6 + 13440.0*x4 - 13440.0*x2 + 1680.0;
+    else if (n == 9)
+        return 512.0*x9 - 9216.0*x7 + 48384.0*x5 - 80640.0*x3 + 30240.0*x;
+    else if (n == 10)
+        return 1024.0*x10 - 23040.0*x8 
+            + 161280.0*x6 - 403200.0*x4 + 302400.0*x2 - 30240.0;
+    else if (n == 11) 
+        return 2048.0*x11 - 56320.0*x9
+            + 506880.0*x7 - 1774080.0*x5 + 2217600.0*x3 - 665280.0*x;
+    else if (n == 12) 
+        return 4096.0*x12 - 135168.0*x10
+            + 1520640.0*x8 - 7096320.0*x6 + 13305600.0*x4 - 7983360.0*x2
+            + 665280.0;
+    else if (n == 13)
+        return 8192.0*x13 - 319488.0*x11 + 4392960.0*x9 - 26357760.0*x7
+            + 69189120.0*x5 - 69189120.0*x3 + 17297280.0*x;
+    else if (n == 14) 
+        return 16384.0*x14 - 745472.0*x12 + 12300288.0*x10 - 92252160.0*x8
+            + 322882560.0*x6 - 484323840.0*x4 + 242161920.0*x2 - 17297280.0;
+    else if (n == 15)
+        return 32768.0*x15 - 1720320.0*x13 + 33546240.0*x11 - 307507200.0*x9
+            + 1383782400.0*x7 - 2905943040.0*x5 + 2421619200.0*x3 
+            - 518918400.0*x;
+    else if (n == 16)
+        return 65536.0*x16 - 3932160.0*x14 + 89456640.0*x12 - 984023040.0*x10
+            + 5535129600.0*x8 - 15498362880.0*x6 + 19372953600.0*x4 
+            - 8302694400.0*x2 + 518918400.0;
+    else if (n == 17)
+        return 131072.0*x17 - 8912896.0*x15 + 233963520.0*x13 
+            - 3041525760.0*x11 + 20910489600.0*x9 - 75277762560.0*x7
+            + 131736084480.0*x5 - 94097203200.0*x3 + 17643225600.0*x;
+    else if (n == 18)
+        return 262144.0*x18 - 20054016.0*x16 + 601620480.0*x14 
+            - 9124577280.0*x12 + 75277762560.0*x10 - 338749931520.0*x8
+            + 790416506880.0*x6 - 846874828800.0*x4
+            + 317578060800.0*x2 - 17643225600.0;
+    else if (n == 19)
+        return 524288.0*x19 - 44826624.0*x17 + 1524105216.0*x15 
+            - 26671841280.0*x13 + 260050452480.0*x11 - 1430277488640.0*x9
+            + 4290832465920.0*x7 - 6436248698880.0*x5 + 4022655436800.0*x3
+            - 670442572800.0*x;
+    if (n >= 20) {
+        float prev2 = 262144.0*x18 - 20054016.0*x16 + 601620480.0*x14 
+            - 9124577280.0*x12 + 75277762560.0*x10 - 338749931520.0*x8
+            + 790416506880.0*x6 - 846874828800.0*x4
+            + 317578060800.0*x2 - 17643225600.0;
+        float prev1 = 524288.0*x19 - 44826624.0*x17 + 1524105216.0*x15 
+            - 26671841280.0*x13 + 260050452480.0*x11 - 1430277488640.0*x9
+            + 4290832465920.0*x7 - 6436248698880.0*x5 + 4022655436800.0*x3
+            - 670442572800.0*x;
+        float res;
+        for (int i = 20; i <= n; i++) {
+            res = 2.0*(x*prev1 - float(i-1)*prev2);
+            prev2 = prev1;
+            prev1 = res;
+        }
+        return res;
+    }
+}
+*/
+
+float factorial(float n) {
+    float res = 1.0, prev = 1.0;
+    for (int i = 0; i <= int(n); i++) {
         if (i > 1) {
-            res = i*prev;
+            res = float(i)*prev;
             prev = res;
         }
     }
@@ -101,19 +202,40 @@ int factorial(int n) {
 
 /* Energy eigenstates for the harmonic oscillator referenced from
 Shankar, pg 195, eq 7.3.22.*/
-complex stationary_state(
+complex stationaryState(
     int n, float x, float t,
     float m, float omega, float hbar
 ) {
     complex i = complex(0.0, 1.0);
-    float norm_factor = pow(
-        m*omega/(PI*hbar*pow(2.0, 2.0*float(n))
-        *pow(float(factorial(n)), 2.0)), 0.25);
-    return norm_factor*(
-        exp(-0.5*m*omega*x*x/hbar - i*omega*(float(n) + 0.5)*t)
-        *hermite(n, x*sqrt(m*omega/hbar)));
+    float normFactor = 
+        pow(m*omega/(PI*hbar), 0.25)
+        * (1.0/pow(2.0, 2.0*float(n)/4.0))
+        * (1.0/pow(factorial(float(n)), 0.5));
+    // float norm_factor = pow(
+    //     m*omega / 
+    //     (PI*hbar*pow(2.0, 2.0*float(n))
+    //      *pow(float(factorial(float(n))), 2.0)
+    //     ),
+    //     0.25);
+    float absVal = (normFactor*hermite(n, x*sqrt(m*omega/hbar)))
+        *exp(-0.5*m*omega*x*x/hbar);
+    #if (__VERSION__ > 130)
+    if (isnan(absVal))
+        absVal = 0.0;
+    #endif
+    return absVal*cExp(-i*omega*(float(n) + 0.5)*t);
 }
 
+/* If the initial wave function in a harmonic oscillator is a Gaussian at t=0,
+get it for all subsequent times by integrating this initial wave function 
+with the harmonic oscillator propagator.
+
+See equation 7.3.28 on pg 196 chapter 7 of Shankar for the formula for the
+harmonic oscillator propagator. In order to evaluate the integral of the
+initial Gaussian wave function with the propagator which also happens to take
+the form of a Gaussian, equations A.2.4 - A.2.5 in page 660 of the appendix
+of Shankar was consulted.
+*/
 complex squeezedStatePhaseFactor(
     float x, float t, 
     float x0, float p0, float sigma0,
@@ -155,7 +277,7 @@ complex squeezedStatePhaseFactor(
 complex squeezedState(
     float x, float t, 
     float x0, float p0, float sigma0,
-    float m, float omega, float hbar, bool omit_phase
+    float m, float omega, float hbar
 ) {
     float c = cos(t*omega), s = sin(t*omega);
     float hbar2 = hbar*hbar;
@@ -164,8 +286,8 @@ complex squeezedState(
     float sigma4 = sigma0*sigma0*sigma0*sigma0;
     float xT = x0*c + p0*s/(m*omega);
     float sT = sqrt(hbar2*s*s + 4.0*m2*omega2*sigma4*c*c)
-        /(2.0*m*omega*sigma0);
-    complex phaseFactor = (colorPhase)?
+        /abs(2.0*m*omega*sigma0);
+    complex phaseFactor = (!colorPhase)?
         complex(1.0, 0.0):
         squeezedStatePhaseFactor(
             x, t, x0, p0, sigma0, m, omega, hbar);
@@ -204,12 +326,22 @@ vec3 argumentToColor(float argVal) {
 }
 
 void main() {
-    vec4 initialXPOmega = texture2D(initialValuesTex, UV);
     float x = (2.0*(UV[1] - 0.5 - offset))*scale;
-    float x0 = initialXPOmega[0];
-    float p0 = initialXPOmega[1];
-    float omega = initialXPOmega[2];
-    complex amplitude = coherentState(x, t, x0, p0, m, omega, hbar);
+    vec4 initialValues = texture2D(initialValuesTex, UV);
+    vec4 initialXPOmegaSigma = initialValues;
+    vec4 initialNOmega = initialValues;
+    float x0 = initialXPOmegaSigma[0];
+    float p0 = initialXPOmegaSigma[1];
+    float omega = initialXPOmegaSigma[2];
+    float sigma = initialXPOmegaSigma[3];
+    int n = int(initialNOmega[0]);
+    complex amplitude;
+    if (waveFunctionType == ALL_COHERENT)
+        amplitude = coherentState(x, t, x0, p0, m, omega, hbar);
+    else if (waveFunctionType == ALL_SQUEEZED)
+        amplitude = squeezedState(x, t, x0, p0, sigma, m, omega, hbar);
+    else if (waveFunctionType == ENERGY_EIGENSTATE)
+        amplitude = stationaryState(n, x, t, m, omega, hbar);
     if (colorPhase)
         fragColor = brightness*vec4(
             argumentToColor(atan(amplitude.y, amplitude.x)),

@@ -243,10 +243,10 @@ function createLineDivider(controls) {
 
 let controls = document.getElementById('controls');
 createScalarParameterSlider(controls, 1, "Time step", "float", {'value': 0.1, 'min': 0.0, 'max': 10.0, 'step': 0.01});
-createScalarParameterSlider(controls, 3, "Number of oscillators", "int", {'value': 64, 'min': 10, 'max': 1024});
+createScalarParameterSlider(controls, 3, "Number of oscillators", "int", {'value': 64, 'min': 8, 'max': 512});
 createLineDivider(controls);
 createLabel(controls, 5, "Metropolis algorithm configuration", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
-createScalarParameterSlider(controls, 6, "Relative step size", "float", {'value': 0.5, 'min': 0.0, 'max': 1.0, 'step': 0.01});
+createScalarParameterSlider(controls, 6, "Relative step size", "float", {'value': 0.66, 'min': 0.0, 'max': 1.0, 'step': 0.01});
 createLabel(controls, 7, "Acceptance rate", "");
 createScalarParameterSlider(controls, 9, "Number of Monte Carlo samples", "int", {'value': 1000, 'min': 10, 'max': 100000});
 createLineDivider(controls);
@@ -254,9 +254,25 @@ createLabel(controls, 11, "Samples display options", "color:white; font-family:A
 createScalarParameterSlider(controls, 12, "Brightness", "float", {'value': 0.01, 'min': 0.0, 'max': 0.1, 'step': 0.0001});
 createVectorParameterSliders(controls, 13, "Colour 1 (r, g, b)", "Vec3", {'value': [0.0, 0.85, 1.0], 'min': [0.0, 0.0, 0.0], 'max': [1.0, 1.0, 1.0], 'step': [0.002, 0.002, 0.002]});
 createVectorParameterSliders(controls, 14, "Colour 2 (r, g, b)", "Vec3", {'value': [0.0, 1.0, 0.0], 'min': [0.0, 0.0, 0.0], 'max': [1.0, 1.0, 1.0], 'step': [0.002, 0.002, 0.002]});
-createSelectionList(controls, 15, 0, "Plot type", [ "Lines",  "Scatter",  "Histogram"]);
+createSelectionList(controls, 15, 0, "Plot type", [ "Lines",  "Scatter",  "Multi-coloured histogram"]);
+createCheckbox(controls, 16, "Display samples in normal coordinates", true);
 createLineDivider(controls);
-createLabel(controls, 17, "Normal mode wave function display", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
-createCheckbox(controls, 18, "Colour phase", false);
-createScalarParameterSlider(controls, 19, "Brightness", "float", {'value': 1.25, 'min': 0.0, 'max': 10.0, 'step': 0.01});
+createLabel(controls, 18, "Normal mode analytic wave function display", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
+createCheckbox(controls, 19, "Colour phase", false);
+createScalarParameterSlider(controls, 20, "Brightness", "float", {'value': 1.25, 'min': 0.0, 'max': 10.0, 'step': 0.01});
+createLineDivider(controls);
+createLabel(controls, 22, "Wave function configuration", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
+createCheckbox(controls, 23, "Coherent (all normal modes)", true, "waveFuncOptions");
+createCheckbox(controls, 24, "Energy eigenstate", false, "waveFuncOptions");
+createCheckbox(controls, 25, "Squeezed", false, "waveFuncOptions");
+createCheckbox(controls, 26, "Superposition of singly-excited normal modes", false, "waveFuncOptions");
+createLabel(controls, 27, "If 'Coherent' or 'Squeezed' selected:", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
+createSelectionList(controls, 28, 0, "Behaviour when modifying a selected normal mode amplitude expectation value with mouse:", [ "Change selected; set others to zero",  "Modify selection only"]);
+createLabel(controls, 29, "If 'Energy eigenstate' selected:", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
+createCheckbox(controls, 30, "Click on normal mode to add energy", true, "stationaryOptions");
+createCheckbox(controls, 31, "Remove energy instead", false, "stationaryOptions");
+createLabel(controls, 32, "If 'Squeezed' selected:", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
+createScalarParameterSlider(controls, 33, "Global squeezing factor (compared to coherent)", "float", {'value': 1.0, 'min': 0.5, 'max': 10.0, 'step': 0.01});
+createScalarParameterSlider(controls, 34, "Squeeze factor for an individual normal mode", "float", {'value': 1.0, 'min': 0.5, 'max': 10.0, 'step': 0.01});
+createLabel(controls, 35, "(Click on a normal mode for this slider to take effect)", "");
 

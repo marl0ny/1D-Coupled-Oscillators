@@ -22,9 +22,9 @@ DATA_DEPENDENCIES = parameters.json
 GENERATION_SCRIPTS = make_parameter_files.py
 GENERATED_DEPENDENCIES = parameters.hpp
 C_SOURCES =
-CPP_SOURCES = main.cpp simulation.cpp gl_wrappers.cpp glfw_window.cpp interactor.cpp configs_view.cpp harmonic.cpp metropolis.cpp
+CPP_SOURCES = main.cpp simulation.cpp gl_wrappers.cpp glfw_window.cpp interactor.cpp configs_view.cpp harmonic.cpp metropolis.cpp histogram.cpp initial_normal_mode_wave_function.cpp multidimensional_harmonic.cpp
 SOURCES = ${C_SOURCES} ${CPP_SOURCES}
-OBJECTS = main.o simulation.o gl_wrappers.o glfw_window.o interactor.o configs_view.o harmonic.o metropolis.o
+OBJECTS = main.o simulation.o gl_wrappers.o glfw_window.o interactor.o configs_view.o harmonic.o metropolis.o histogram.o initial_normal_mode_wave_function.o multidimensional_harmonic.o
 # SHADERS = ./shaders/*
 
 
@@ -35,7 +35,7 @@ ${TARGET}: ${OBJECTS}
 
 ${WEB_TARGET}: ${SOURCES} ${GENERATED_DEPENDENCIES}
 	emcc -lembind -o $@ ${SOURCES} ${INCLUDE} -O3 -v -s WASM=2 -s USE_GLFW=3 -s FULL_ES3=1 \
-	-s TOTAL_MEMORY=400MB -s LLD_REPORT_UNDEFINED --embed-file shaders
+	-s TOTAL_MEMORY=500MB -s LLD_REPORT_UNDEFINED --embed-file shaders
 
 ${OBJECTS}: ${CPP_SOURCES} ${GENERATED_DEPENDENCIES}
 	${CPP_COMPILE} ${FLAGS} -c ${CPP_SOURCES} ${INCLUDE}

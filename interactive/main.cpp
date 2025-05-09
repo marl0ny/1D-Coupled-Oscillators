@@ -28,6 +28,9 @@ void oscillators(MainGLFWQuad main_render,
             if (c == params.NUMBER_OF_OSCILLATORS) {
                 sim.reset_oscillator_count(u.i32);
             }
+            if (c == params.SQUEEZED_FACTOR_GLOBAL) {
+                sim.set_relative_standard_deviation(1.0/u.f32);
+            }
             params.set(c, u);
         };
         s_sim_params_get = [&params](int c) -> Uniform {
@@ -37,6 +40,8 @@ void oscillators(MainGLFWQuad main_render,
             int c, int val) {
             if (c == params.DISPLAY_TYPE)
                 params.displayType.selected = val;
+            if (c == params.CLICK_ACTION_NORMAL)
+                params.clickActionNormal.selected = val;
         };
     }
     size_t step_count = 0;
@@ -57,7 +62,7 @@ void oscillators(MainGLFWQuad main_render,
             interactor.click_update(main_render.get_window());
             if (pos.x > 0.0 && pos.x < 1.0 && 
                 pos.y > 0.0 && pos.y < 1.0 && interactor.left_pressed()) {
-                sim.cursor_set_initial_wf(params, pos);
+                sim.cursor_set_initial_wave_function(params, pos);
             }
         };
         poll_events();
