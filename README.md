@@ -1,5 +1,8 @@
 # 1D Chain of Coupled Harmonic Oscillators (WIP)
 
+Visualization of a 1D chain of quantum harmonic oscillators, both in position space and in terms of its normal coordinates.
+Link to the [interactive simulation](https://marl0ny.github.io/1D-Coupled-Oscillators/compiled/).
+
 ## Main Reference
 
 Scott C. Johnson and Thomas D. Gutierrez, 
