@@ -4,12 +4,10 @@
 #include "simulation.hpp"
 
 #ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#include <emscripten/bind.h>
-#endif
-#include <functional>
-
 #include "wasm_wrappers.hpp"
+#else
+#include "imgui_wrappers.hpp"
+#endif
 
 static std::function <void()> s_loop;
 #ifdef __EMSCRIPTEN__
@@ -45,6 +43,7 @@ void oscillators(MainGLFWQuad main_render,
         };
     }
     size_t step_count = 0;
+    start_gui(main_render.get_window());
     s_loop = [&] {
         sim.compute_configurations(params);
         main_render.draw(sim.render_view(params));
@@ -66,6 +65,7 @@ void oscillators(MainGLFWQuad main_render,
             }
         };
         poll_events();
+        display_gui(&params);
         glfwSwapBuffers(main_render.get_window());
     };
     #ifdef __EMSCRIPTEN__
@@ -78,7 +78,7 @@ void oscillators(MainGLFWQuad main_render,
 }
 
 int main(int argc, char *argv[]) {
-    int window_width = 1500, window_height = 1500;
+    int window_width = 2500, window_height = 1500;
     // Construct the main window quad
     if (argc >= 3) {
         window_width = std::atoi(argv[1]);

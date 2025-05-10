@@ -15,7 +15,14 @@ using std::vector;
 
 
 static double factorial(double n) {
-    return (n == 0)? 1: n*factorial(n - 1);
+    double res = 1, prev = 1;
+    for (size_t i = 0; i < (n+1); i++) {
+        if (i > 1) {
+            res = i*prev;
+            prev = res;
+        }
+    }
+    return res;
 }
 
 /* Recursive Hermite polynomials.

@@ -1,5 +1,19 @@
+"""Implementation of the recursive formula for obtaining the 
+Hermite polynomials in an iterative manner.
+
+This script will explicitly write out the first few of these polynomials
+in C-style if or case statement code expressions.
+
+Reference:
+
+Shankar R., "The Harmonic Oscillator,"
+in <i>Principles of Quantum Mechanics</i>, 2nd ed,
+Springer, 1994, ch. 7., pg 185-221.
+
+"""
 from sympy import Symbol, simplify
 import re
+
 
 def factorial(n):
     res, prev = 1, 1
@@ -11,6 +25,11 @@ def factorial(n):
 
 
 def hermite(n, x):
+    """Hermite polynomials.
+
+    See Shankar, pg. 195, 7.3.21 to obtain the base cases,
+    then 7.3.35 for the recursive relation itself.
+    """
     prev1, prev2, res = 0, 0, 0
     for i in range(n+1):
         if i == 0:
@@ -70,6 +89,7 @@ def write_case(i):
         + replace_ints_to_floats(
             re.sub("\*\*", '', str(simplify(hermite(i, x)))))\
         + ";"
+
 
 def write_if_statement(i):
     expr = simplify(hermite(i, x))

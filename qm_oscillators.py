@@ -22,7 +22,8 @@ OMEGA_DIAG = 2.0*np.sin(0.5*np.pi*(np.arange(N) + 1)/(N + 1))
 
 
 def coherent_state(x, t, x0, p0, m, omega, hbar):
-    """ See Shankar, pg. 610
+    """Formula for the harmonic oscillator coherent state from
+    Shankar, pg. 610, equation 21.1.132 in exercise 21.2.18.
     """
     z_real = np.sqrt((m*omega)/(2.0*hbar))*x0
     z_imag = np.sqrt(1.0/(2.0*m*omega*hbar))*p0
@@ -62,7 +63,13 @@ amplitude = coherent_state_prod(
 
 def metropolis(x0, delta, dist_func, steps, kw):
     """
-    The Metropolis-Hastings algorithm
+    See pg. 429 to 430 of "An Introduction to Computer Simulation Methods"
+    by Harvey Gould, Jan Tobochnik, and Wolfgang Christian for a general 
+    outline of the Metropolis algorithm.
+
+    Gould H., Tobochnik J., Christian W., "Numerical and Monte Carlo Methods,"
+    in <i>An Introduction to Computer Simulation Methods</i>,
+    2016, ch 11., pg 406-444.
     """
     shape = tuple([steps] + list(x0.shape))
     vals = np.zeros(shape)
@@ -77,8 +84,10 @@ def metropolis(x0, delta, dist_func, steps, kw):
             x_curr = x_next
     return vals
 
+
 print(amplitude)
 print(1.0/np.sqrt(OMEGA_DIAG))
+
 
 configs_diag = metropolis(initial_diag_pos, 1.0/np.sqrt(OMEGA_DIAG),
                           coherent_state_prod, 1000,

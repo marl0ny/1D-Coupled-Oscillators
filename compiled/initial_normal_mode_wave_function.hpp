@@ -17,7 +17,7 @@ If configured as a squeezed state, the member s is used to keep track
 of the initial standard deviations, where each element of s gives the
 initial normal mode standard deviation divided by its ground state standard 
 deviation. Like coherent, x and p are also used to keep track of the initial
-expected positions and momenta. If configured as an energy eigenstate ony the
+expected positions and momenta. If configured as an energy eigenstate only the
 member excitations is used, where this counts the number of excitations
 assigned to each normal mode.*/
 struct InitialNormalModeWaveFunction {

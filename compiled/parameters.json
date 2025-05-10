@@ -1,6 +1,6 @@
 {
     "stepsPerFrame": {"name": "Steps/frame", "type": "int", "value": 1},
-    "dt": {"name": "Time step", "type": "float", "value": 0.1, "min": 0.0, "max": 10.0, "step": 0.01},
+    "dt": {"name": "Time elapsed per frame", "type": "float", "value": 0.1, "min": 0.0, "max": 10.0, "step": 0.01},
     "t": {"name": "Time", "type": "float", "value": 0.0},
     "numberOfOscillators": {"name": "Number of oscillators", "type": "int", "value": 64, "min": 8, "max": 512},
     "lineDivMonteCarlo": {"type": "LineDivider", "value": "{}"},
@@ -21,20 +21,19 @@
     "colorPhase": {"name": "Colour phase", "type": "bool", "value": false},
     "modesBrightness": {"name": "Brightness", "type": "float", "value": 1.25, "min": 0.0, "max": 10.0, "step": 0.01},
     "lineDivWaveFuncOptions": {"type": "LineDivider", "value": "{}"},
-    "waveFuncConfigLabel": {"name": "Wave function configuration", "type": "Label", "value": "{}", "style": "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;"},
-    "useCoherentStates": {"name": "Coherent (all normal modes)", "type": "bool", "value": true, "xorListName": "waveFuncOptions"},
-    "useStationary": {"name": "Energy eigenstate", "type": "bool", "value": false, "xorListName": "waveFuncOptions"},
+    "waveFuncConfigLabel": {"name": "Wave function modification options", "type": "Label", "value": "{}", "style": "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;"},
+    "useCoherentStates": {"name": "Coherent (All normal modes)", "type": "bool", "value": true, "xorListName": "waveFuncOptions"},
     "useSqueezed": {"name": "Squeezed", "type": "bool", "value": false, "xorListName": "waveFuncOptions"},
+    "useStationary": {"name": "Energy eigenstate (Expect poor Metropolis convergence for highly excited modes.)", "type": "bool", "value": false, "xorListName": "waveFuncOptions"},
     "useSingleExcitations": {"name": "Superposition of singly-excited normal modes", "type": "bool", "value": false, "xorListName": "waveFuncOptions"},
+    "noteForUseSingleExcitations": {"name": "(Will be difficult to differentiate any differences from the ground unless a large number of samples are used.)", "type": "Label", "value": "{}"},
     "coherentOrSqueezedSelectedLabel": {"name": "If 'Coherent' or 'Squeezed' selected:", "type": "Label", "value": {}, "style": "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;"},
     "clickActionNormal": {"name": "Behaviour when modifying a selected normal mode amplitude expectation value with mouse:", "type": "SelectionList", "value": "{0, {\"Change selected; set others to zero\", \"Modify selection only\"}}"},
-    "energyEigenstatesSelectedLabel": {"name": "If 'Energy eigenstate' selected:", "type": "Label", "value": {}, "style": "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;"},
-    "addEnergy": {"name": "Click on normal mode to add energy", "type": "bool", "value": true, "xorListName": "stationaryOptions"},
-    "removeEnergy": {"name": "Remove energy instead", "type": "bool", "value": false, "xorListName": "stationaryOptions"},
     "squeezedSelectedLabel": {"name": "If 'Squeezed' selected:", "type": "Label", "value": {}, "style": "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;"},
     "squeezedFactorGlobal": {"name": "Global squeezing factor (compared to coherent)", "type": "float", "value": 1.0, "min": 0.5, "max": 10.0, "step": 0.01},
     "squeezedFactor": {"name": "Squeeze factor for an individual normal mode", "type": "float", "value": 1.0, "min": 0.5, "max": 10.0, "step": 0.01},
-    "squeezedStateRelStDevLabel": {"name": "(Click on a normal mode for this slider to take effect)", "type": "Label", "value": "{}"}
-
-
+    "squeezedStateRelStDevLabel": {"name": "(Click on a normal mode for this slider to take effect)", "type": "Label", "value": "{}"},
+    "energyEigenstatesSelectedLabel": {"name": "If 'Energy eigenstate' selected:", "type": "Label", "value": {}, "style": "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;"},
+    "addEnergy": {"name": "Click on normal mode to add energy", "type": "bool", "value": true, "xorListName": "stationaryOptions"},
+    "removeEnergy": {"name": "Remove energy instead", "type": "bool", "value": false, "xorListName": "stationaryOptions"}
 }

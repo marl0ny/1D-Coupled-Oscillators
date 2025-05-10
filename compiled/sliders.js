@@ -242,7 +242,7 @@ function createLineDivider(controls) {
 }
 
 let controls = document.getElementById('controls');
-createScalarParameterSlider(controls, 1, "Time step", "float", {'value': 0.1, 'min': 0.0, 'max': 10.0, 'step': 0.01});
+createScalarParameterSlider(controls, 1, "Time elapsed per frame", "float", {'value': 0.1, 'min': 0.0, 'max': 10.0, 'step': 0.01});
 createScalarParameterSlider(controls, 3, "Number of oscillators", "int", {'value': 64, 'min': 8, 'max': 512});
 createLineDivider(controls);
 createLabel(controls, 5, "Metropolis algorithm configuration", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
@@ -261,18 +261,19 @@ createLabel(controls, 18, "Normal mode analytic wave function display", "color:w
 createCheckbox(controls, 19, "Colour phase", false);
 createScalarParameterSlider(controls, 20, "Brightness", "float", {'value': 1.25, 'min': 0.0, 'max': 10.0, 'step': 0.01});
 createLineDivider(controls);
-createLabel(controls, 22, "Wave function configuration", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
-createCheckbox(controls, 23, "Coherent (all normal modes)", true, "waveFuncOptions");
-createCheckbox(controls, 24, "Energy eigenstate", false, "waveFuncOptions");
-createCheckbox(controls, 25, "Squeezed", false, "waveFuncOptions");
+createLabel(controls, 22, "Wave function modification options", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
+createCheckbox(controls, 23, "Coherent (All normal modes)", true, "waveFuncOptions");
+createCheckbox(controls, 24, "Squeezed", false, "waveFuncOptions");
+createCheckbox(controls, 25, "Energy eigenstate (Expect poor Metropolis convergence for highly excited modes.)", false, "waveFuncOptions");
 createCheckbox(controls, 26, "Superposition of singly-excited normal modes", false, "waveFuncOptions");
-createLabel(controls, 27, "If 'Coherent' or 'Squeezed' selected:", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
-createSelectionList(controls, 28, 0, "Behaviour when modifying a selected normal mode amplitude expectation value with mouse:", [ "Change selected; set others to zero",  "Modify selection only"]);
-createLabel(controls, 29, "If 'Energy eigenstate' selected:", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
-createCheckbox(controls, 30, "Click on normal mode to add energy", true, "stationaryOptions");
-createCheckbox(controls, 31, "Remove energy instead", false, "stationaryOptions");
-createLabel(controls, 32, "If 'Squeezed' selected:", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
-createScalarParameterSlider(controls, 33, "Global squeezing factor (compared to coherent)", "float", {'value': 1.0, 'min': 0.5, 'max': 10.0, 'step': 0.01});
-createScalarParameterSlider(controls, 34, "Squeeze factor for an individual normal mode", "float", {'value': 1.0, 'min': 0.5, 'max': 10.0, 'step': 0.01});
-createLabel(controls, 35, "(Click on a normal mode for this slider to take effect)", "");
+createLabel(controls, 27, "(Will be difficult to differentiate any differences from the ground unless a large number of samples are used.)", "");
+createLabel(controls, 28, "If 'Coherent' or 'Squeezed' selected:", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
+createSelectionList(controls, 29, 0, "Behaviour when modifying a selected normal mode amplitude expectation value with mouse:", [ "Change selected; set others to zero",  "Modify selection only"]);
+createLabel(controls, 30, "If 'Squeezed' selected:", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
+createScalarParameterSlider(controls, 31, "Global squeezing factor (compared to coherent)", "float", {'value': 1.0, 'min': 0.5, 'max': 10.0, 'step': 0.01});
+createScalarParameterSlider(controls, 32, "Squeeze factor for an individual normal mode", "float", {'value': 1.0, 'min': 0.5, 'max': 10.0, 'step': 0.01});
+createLabel(controls, 33, "(Click on a normal mode for this slider to take effect)", "");
+createLabel(controls, 34, "If 'Energy eigenstate' selected:", "color:white; font-family:Arial, Helvetica, sans-serif; font-weight: bold;");
+createCheckbox(controls, 35, "Click on normal mode to add energy", true, "stationaryOptions");
+createCheckbox(controls, 36, "Remove energy instead", false, "stationaryOptions");
 

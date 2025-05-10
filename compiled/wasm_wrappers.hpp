@@ -1,11 +1,13 @@
-#ifdef __EMSCRIPTEN__
-
-using namespace emscripten;
-
-#endif
-#include <functional>
 #include "gl_wrappers.hpp"
+
+#include <functional>
 #include <set>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/bind.h>
+using namespace emscripten;
+#endif
 
 static std::function<void(int, Uniform)> s_sim_params_set;
 static std::function<void(int, int, std::string)> s_sim_params_set_string;
@@ -133,20 +135,28 @@ void selection_set(int param_code, int value) {
 //     s_input_type = type;
 // }
 
+void start_gui(void *window) {
+}
+
+void display_gui(void *data) {
+
+}
+
 #ifdef __EMSCRIPTEN__
+
 EMSCRIPTEN_BINDINGS(my_module) {
-    function("set_float_param", set_float_param);
-    function("set_int_param", set_int_param);
-    function("set_bool_param", set_bool_param);
-    function("set_vec_param", set_vec_param);
-    function("set_ivec_param", set_ivec_param);
-    function("set_string_param", set_string_param);
-    function("user_edit_get_value", user_edit_get_value);
-    function("user_edit_set_value", user_edit_set_value);
-    function("user_edit_get_comma_separated_variables",
+    emscripten::function("set_float_param", set_float_param);
+    emscripten::function("set_int_param", set_int_param);
+    emscripten::function("set_bool_param", set_bool_param);
+    emscripten::function("set_vec_param", set_vec_param);
+    emscripten::function("set_ivec_param", set_ivec_param);
+    emscripten::function("set_string_param", set_string_param);
+    emscripten::function("user_edit_get_value", user_edit_get_value);
+    emscripten::function("user_edit_set_value", user_edit_set_value);
+    emscripten::function("user_edit_get_comma_separated_variables",
              user_edit_get_comma_separated_variables);
-    function("button_pressed", button_pressed);
-    function("selection_set", selection_set);
-    function("set_user_float_param", set_user_float_param);
+    emscripten::function("button_pressed", button_pressed);
+    emscripten::function("selection_set", selection_set);
+    emscripten::function("set_user_float_param", set_user_float_param);
 }
 #endif

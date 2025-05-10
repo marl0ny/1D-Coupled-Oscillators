@@ -492,10 +492,186 @@ def write_typed_sim_parameters_hpp(parameters, name_space, dst_file_name):
 
     with open(dst_file_name, "w") as f:
         f.write(file_contents)
+    
 
+IMGUI_CONTROLS_START = """
+#include "{}"
+
+#ifndef _IMGUI_CONTROLS_
+#define _IMGUI_CONTROLS_
+using namespace {};
+
+#include "gl_wrappers.hpp"
+
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_glfw.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
+
+#include <functional>
+#include <set>
+
+#include "parameters.hpp"
+
+static std::function<void(int, Uniform)> s_sim_params_set;
+static std::function<void(int, int, std::string)> s_sim_params_set_string;
+static std::function<Uniform(int)> s_sim_params_get;
+static std::function<void(int, std::string, float)> s_user_edit_set_value;
+static std::function<float(int, std::string)> s_user_edit_get_value;
+static std::function<std::string(int)>
+    s_user_edit_get_comma_separated_variables;
+static std::function<void(int)> s_button_pressed;
+static std::function<void(int, int)> s_selection_set;
+static std::function<void(int, std::string, float)>
+    s_sim_params_set_user_float_param;
+
+static ImGuiIO global_io;
+
+
+void edit_label_display(int c, std::string text_content) {{
+    std::string string_val = "";
+    string_val += "editLabel(";
+    string_val += std::to_string(c);
+    string_val += ", ";
+    string_val += "\"" + text_content + "\"";
+    string_val += ");";
+    // TODO
+}}
+
+void display_parameters_as_sliders(
+    int c, std::set<std::string> variables) {{
+    std::string string_val = "[";
+    for (auto &e: variables)
+        string_val += "\"" + e + "\", ";
+    string_val += "]";
+    string_val 
+        = "modifyUserSliders(" + std::to_string(c) + ", " + string_val + ");";
+    // TODO
+}}
+
+void start_gui(void *window) {{
+    bool show_controls_window = true;
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::StyleColorsClassic();
+    ImGui_ImplGlfw_InitForOpenGL((GLFWwindow *)window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+}}
+
+void imgui_controls(void *void_params) {{
+    SimParams *params = (SimParams *)void_params;
+"""
+
+IMGUI_CONTROLS_END = """
+}
+
+void display_gui(void *data) {{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    bool val = true;
+    ImGui::Begin("Controls", &val);
+    ImGui::Text("WIP AND INCOMPLETE");
+    imgui_controls(data);
+    ImGui::End();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}}
+
+#endif
+"""
+
+IMGUI_SLIDER_FLOAT  = \
+"""    ImGui::SliderFloat("{}", &params->{}, {}, {});
+"""
+
+IMGUI_SLIDER_INT  = \
+"""    ImGui::SliderInt("{}", &params->{}, {}, {});
+"""
+
+IMGUI_CHECKBOX  = \
+"""    ImGui::Checkbox("{}", &params->{});
+"""
+
+IMGUI_TEXT = \
+"""    ImGui::Text("{}");
+"""
+
+IMGUI_MENU = \
+"""    if (ImGui::MenuItem({})) params->{}.selected = {};
+"""
+
+def write_imgui_controls(
+        parameters, param_namespace, param_header, dst_file_name):
+    file_contents = ""
+    file_contents \
+        += IMGUI_CONTROLS_START.format(param_header, param_namespace)
+    names = set()
+    for i, k in enumerate(parameters.keys()):
+        parameter = parameters[k]
+        type_ = parameter["type"]
+        value = parameter["value"]
+        try:
+            name = parameter["name"]
+        except:
+            pass
+        if name in names:
+            name += f" ({k})"
+        names.add(name)
+        if 'Vec2' == type_ or 'Vec3' == type_ or 'Vec4' == type_:
+            if "min" in parameter and "max" in parameter:
+                min_, max_ = parameter["min"], parameter["max"]
+                file_contents += IMGUI_TEXT.format(name)
+                n_elem = int(type_[-1])
+                for i in range(n_elem):
+                    file_contents += IMGUI_SLIDER_FLOAT.format(
+                        f"{k}[{i}]", k + f".ind[{i}]", min_[i], max_[i]
+                    )
+        if 'float' in type_:
+            if "min" in parameter and "max" in parameter:
+                min_, max_ = parameter["min"], parameter["max"]
+                file_contents += IMGUI_SLIDER_FLOAT.format(
+                    name, k, min_, max_)
+        if 'int' in type_:
+            if "min" in parameter and "max" in parameter:
+                min_, max_ = parameter["min"], parameter["max"]
+                file_contents += IMGUI_SLIDER_INT.format(
+                    name, k, min_, max_)
+        if 'bool' in type_:
+            file_contents += IMGUI_CHECKBOX.format(name, k)
+        if 'Label' in type_:
+            file_contents += IMGUI_TEXT.format(name)
+        if 'LineDivider' in type_:
+            file_contents += f"    ImGui::Text(\"{'-'*80}\");\n"
+        if 'SelectionList' in type_:
+            val2 = ''.join([c for c in value if (c != '}' and c != '{')])
+            list_val = val2.split(',')[1:]
+            # file_contents \
+            #     += f"    std::vector<bool> sel_{k} ({len(list_val)});\n"
+            # file_contents \
+            #     += f"    for (int i = 0; i < {len(list_val)}; i++)\n"
+            # file_contents \
+            #     += f"        sel_{k}[i] = (i == params->{k}.selected);\n"
+            file_contents += "    if (ImGui::BeginMenu(\"{}\")) {{\n".format(name)
+            for i, e in enumerate(list_val):
+                file_contents += "    " + IMGUI_MENU.format(e, k, i)
+            file_contents += "        ImGui::EndMenu();\n"
+            file_contents += "    }\n"
+            # file_contents \
+            #     += f"    for (int i = 0; i < {len(list_val)}; i++)\n"
+            # file_contents \
+            #     += f"        if (sel_{k}[i]) params->{k}.selected = i;\n"
+            file_contents \
+                += (f"    s_selection_set(params->{camel_to_snake(k, True)},"
+                     + f" params->{k}.selected);\n")
+    file_contents += IMGUI_CONTROLS_END
+    with open(dst_file_name, "w") as f:
+        f.write(file_contents)
 
 with open('parameters.json', 'r') as f:
     parameters = json.loads(''.join([line for line in f]))
 
 write_sliders_js(parameters, "sliders.js")
+write_imgui_controls(
+    parameters, "sim_2d", "parameters.hpp", "imgui_wrappers.hpp")
 write_typed_sim_parameters_hpp(parameters, "sim_2d", "parameters.hpp")

@@ -4,8 +4,13 @@
 InitialNormalModeWaveFunction
 ::InitialNormalModeWaveFunction(size_t size) {
     this->size = size;
-    for (int i = 0; i < MAX_SIZE; i++)
-        s[i] = 1.0;
+    for (int i = 0; i < MAX_SIZE; i++) {
+        this->x[i] = 0.0;
+        this->p[i] = 0.0;
+        this->excitations[i] = 0;
+        this->s[i] = 1.0;
+        this->coefficients[i] = 0.0;
+    }
 }
 
 void InitialNormalModeWaveFunction::resize(size_t new_size) {

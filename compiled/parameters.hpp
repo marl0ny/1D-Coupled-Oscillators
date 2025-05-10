@@ -43,18 +43,19 @@ struct LineDivider {};
     LineDivider lineDivWaveFuncOptions = LineDivider{};
     Label waveFuncConfigLabel = Label{};
     bool useCoherentStates = (bool)(true);
-    bool useStationary = (bool)(false);
     bool useSqueezed = (bool)(false);
+    bool useStationary = (bool)(false);
     bool useSingleExcitations = (bool)(false);
+    Label noteForUseSingleExcitations = Label{};
     Label coherentOrSqueezedSelectedLabel = Label{};
     SelectionList clickActionNormal = SelectionList{0, {"Change selected; set others to zero", "Modify selection only"}};
-    Label energyEigenstatesSelectedLabel = Label{};
-    bool addEnergy = (bool)(true);
-    bool removeEnergy = (bool)(false);
     Label squeezedSelectedLabel = Label{};
     float squeezedFactorGlobal = (float)(1.0F);
     float squeezedFactor = (float)(1.0F);
     Label squeezedStateRelStDevLabel = Label{};
+    Label energyEigenstatesSelectedLabel = Label{};
+    bool addEnergy = (bool)(true);
+    bool removeEnergy = (bool)(false);
     enum {
         STEPS_PER_FRAME=0,
         DT=1,
@@ -80,18 +81,19 @@ struct LineDivider {};
         LINE_DIV_WAVE_FUNC_OPTIONS=21,
         WAVE_FUNC_CONFIG_LABEL=22,
         USE_COHERENT_STATES=23,
-        USE_STATIONARY=24,
-        USE_SQUEEZED=25,
+        USE_SQUEEZED=24,
+        USE_STATIONARY=25,
         USE_SINGLE_EXCITATIONS=26,
-        COHERENT_OR_SQUEEZED_SELECTED_LABEL=27,
-        CLICK_ACTION_NORMAL=28,
-        ENERGY_EIGENSTATES_SELECTED_LABEL=29,
-        ADD_ENERGY=30,
-        REMOVE_ENERGY=31,
-        SQUEEZED_SELECTED_LABEL=32,
-        SQUEEZED_FACTOR_GLOBAL=33,
-        SQUEEZED_FACTOR=34,
-        SQUEEZED_STATE_REL_ST_DEV_LABEL=35,
+        NOTE_FOR_USE_SINGLE_EXCITATIONS=27,
+        COHERENT_OR_SQUEEZED_SELECTED_LABEL=28,
+        CLICK_ACTION_NORMAL=29,
+        SQUEEZED_SELECTED_LABEL=30,
+        SQUEEZED_FACTOR_GLOBAL=31,
+        SQUEEZED_FACTOR=32,
+        SQUEEZED_STATE_REL_ST_DEV_LABEL=33,
+        ENERGY_EIGENSTATES_SELECTED_LABEL=34,
+        ADD_ENERGY=35,
+        REMOVE_ENERGY=36,
     };
     void set(int enum_val, Uniform val) {
         switch(enum_val) {
@@ -137,26 +139,26 @@ struct LineDivider {};
             case USE_COHERENT_STATES:
             useCoherentStates = val.b32;
             break;
-            case USE_STATIONARY:
-            useStationary = val.b32;
-            break;
             case USE_SQUEEZED:
             useSqueezed = val.b32;
             break;
+            case USE_STATIONARY:
+            useStationary = val.b32;
+            break;
             case USE_SINGLE_EXCITATIONS:
             useSingleExcitations = val.b32;
-            break;
-            case ADD_ENERGY:
-            addEnergy = val.b32;
-            break;
-            case REMOVE_ENERGY:
-            removeEnergy = val.b32;
             break;
             case SQUEEZED_FACTOR_GLOBAL:
             squeezedFactorGlobal = val.f32;
             break;
             case SQUEEZED_FACTOR:
             squeezedFactor = val.f32;
+            break;
+            case ADD_ENERGY:
+            addEnergy = val.b32;
+            break;
+            case REMOVE_ENERGY:
+            removeEnergy = val.b32;
             break;
         }
     }
@@ -190,20 +192,20 @@ struct LineDivider {};
             return {(float)modesBrightness};
             case USE_COHERENT_STATES:
             return {(bool)useCoherentStates};
-            case USE_STATIONARY:
-            return {(bool)useStationary};
             case USE_SQUEEZED:
             return {(bool)useSqueezed};
+            case USE_STATIONARY:
+            return {(bool)useStationary};
             case USE_SINGLE_EXCITATIONS:
             return {(bool)useSingleExcitations};
-            case ADD_ENERGY:
-            return {(bool)addEnergy};
-            case REMOVE_ENERGY:
-            return {(bool)removeEnergy};
             case SQUEEZED_FACTOR_GLOBAL:
             return {(float)squeezedFactorGlobal};
             case SQUEEZED_FACTOR:
             return {(float)squeezedFactor};
+            case ADD_ENERGY:
+            return {(bool)addEnergy};
+            case REMOVE_ENERGY:
+            return {(bool)removeEnergy};
         }
         return Uniform(0);
     }

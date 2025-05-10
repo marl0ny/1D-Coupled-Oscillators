@@ -4,4 +4,6 @@
 !.gitignore
 *.o
 program
-
+*.zip
+/**/imgui
+*.ini
