@@ -231,3 +231,19 @@ double squeezed_standard_dev(
     return sqrt(hbar2*s*s + 4.0*m2*omega2*sigma4*c*c)
         /abs(2.0*m*omega*sigma0);
 }
+
+double squeezed_avg_x(
+    double t,
+    double x0, double p0,
+    double m, double omega, double hbar
+) {
+    return x0*cos(t*omega) + p0*sin(t*omega)/(m*omega);
+}
+
+double squeezed_avg_p(
+    double t,
+    double x0, double p0,
+    double m, double omega, double hbar
+) {
+    return -omega*x0*sin(t*omega) + (p0/m)*cos(t*omega);
+}

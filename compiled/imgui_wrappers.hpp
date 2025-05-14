@@ -29,16 +29,10 @@ static std::function<void(int, std::string, float)>
     s_sim_params_set_user_float_param;
 
 static ImGuiIO global_io;
-
+static std::map<int, std::string> global_labels;
 
 void edit_label_display(int c, std::string text_content) {
-    std::string string_val = "";
-    string_val += "editLabel(";
-    string_val += std::to_string(c);
-    string_val += ", ";
-    string_val += """ + text_content + """;
-    string_val += ");";
-    // TODO
+    global_labels[c] = text_content;
 }
 
 void display_parameters_as_sliders(
@@ -64,24 +58,37 @@ void start_gui(void *window) {
 
 void imgui_controls(void *void_params) {
     SimParams *params = (SimParams *)void_params;
-    ImGui::SliderFloat("Time elapsed per frame", &params->dt, 0.0, 10.0);
-    ImGui::SliderInt("Number of oscillators", &params->numberOfOscillators, 8, 512);
+    for (auto &e: global_labels)
+        params->set(e.first, 0, e.second);
+    if (ImGui::SliderFloat("Time elapsed per frame", &params->dt, 0.0, 10.0))
+           s_sim_params_set(params->DT, params->dt);
+    if (ImGui::SliderInt("Number of oscillators", &params->numberOfOscillators, 8, 512))
+            s_sim_params_set(params->NUMBER_OF_OSCILLATORS, params->numberOfOscillators);
     ImGui::Text("--------------------------------------------------------------------------------");
     ImGui::Text("Metropolis algorithm configuration");
-    ImGui::SliderFloat("Relative step size", &params->relativeDelta, 0.0, 1.0);
+    if (ImGui::SliderFloat("Relative step size", &params->relativeDelta, 0.0, 1.0))
+           s_sim_params_set(params->RELATIVE_DELTA, params->relativeDelta);
     ImGui::Text("Acceptance rate");
-    ImGui::SliderInt("Number of Monte Carlo samples", &params->numberOfMCSteps, 10, 100000);
+    if (ImGui::SliderInt("Number of Monte Carlo samples", &params->numberOfMCSteps, 10, 100000))
+            s_sim_params_set(params->NUMBER_OF_M_C_STEPS, params->numberOfMCSteps);
     ImGui::Text("--------------------------------------------------------------------------------");
     ImGui::Text("Samples display options");
-    ImGui::SliderFloat("Brightness", &params->alphaBrightness, 0.0, 0.1);
+    if (ImGui::SliderFloat("Brightness", &params->alphaBrightness, 0.0, 0.1))
+           s_sim_params_set(params->ALPHA_BRIGHTNESS, params->alphaBrightness);
     ImGui::Text("Colour 1 (r, g, b)");
-    ImGui::SliderFloat("colorOfSamples1[0]", &params->colorOfSamples1.ind[0], 0.0, 1.0);
-    ImGui::SliderFloat("colorOfSamples1[1]", &params->colorOfSamples1.ind[1], 0.0, 1.0);
-    ImGui::SliderFloat("colorOfSamples1[2]", &params->colorOfSamples1.ind[2], 0.0, 1.0);
+    if (ImGui::SliderFloat("colorOfSamples1[0]", &params->colorOfSamples1.ind[0], 0.0, 1.0))
+           s_sim_params_set(params->COLOR_OF_SAMPLES1, params->colorOfSamples1);
+    if (ImGui::SliderFloat("colorOfSamples1[1]", &params->colorOfSamples1.ind[1], 0.0, 1.0))
+           s_sim_params_set(params->COLOR_OF_SAMPLES1, params->colorOfSamples1);
+    if (ImGui::SliderFloat("colorOfSamples1[2]", &params->colorOfSamples1.ind[2], 0.0, 1.0))
+           s_sim_params_set(params->COLOR_OF_SAMPLES1, params->colorOfSamples1);
     ImGui::Text("Colour 2 (r, g, b)");
-    ImGui::SliderFloat("colorOfSamples2[0]", &params->colorOfSamples2.ind[0], 0.0, 1.0);
-    ImGui::SliderFloat("colorOfSamples2[1]", &params->colorOfSamples2.ind[1], 0.0, 1.0);
-    ImGui::SliderFloat("colorOfSamples2[2]", &params->colorOfSamples2.ind[2], 0.0, 1.0);
+    if (ImGui::SliderFloat("colorOfSamples2[0]", &params->colorOfSamples2.ind[0], 0.0, 1.0))
+           s_sim_params_set(params->COLOR_OF_SAMPLES2, params->colorOfSamples2);
+    if (ImGui::SliderFloat("colorOfSamples2[1]", &params->colorOfSamples2.ind[1], 0.0, 1.0))
+           s_sim_params_set(params->COLOR_OF_SAMPLES2, params->colorOfSamples2);
+    if (ImGui::SliderFloat("colorOfSamples2[2]", &params->colorOfSamples2.ind[2], 0.0, 1.0))
+           s_sim_params_set(params->COLOR_OF_SAMPLES2, params->colorOfSamples2);
     if (ImGui::BeginMenu("Plot type")) {
         if (ImGui::MenuItem( "Lines")) params->displayType.selected = 0;
         if (ImGui::MenuItem( "Scatter")) params->displayType.selected = 1;
@@ -93,7 +100,8 @@ void imgui_controls(void *void_params) {
     ImGui::Text("--------------------------------------------------------------------------------");
     ImGui::Text("Normal mode analytic wave function display");
     ImGui::Checkbox("Colour phase", &params->colorPhase);
-    ImGui::SliderFloat("Brightness (modesBrightness)", &params->modesBrightness, 0.0, 10.0);
+    if (ImGui::SliderFloat("Brightness (modesBrightness)", &params->modesBrightness, 0.0, 10.0))
+           s_sim_params_set(params->MODES_BRIGHTNESS, params->modesBrightness);
     ImGui::Text("--------------------------------------------------------------------------------");
     ImGui::Text("Wave function modification options");
     ImGui::Checkbox("Coherent (All normal modes)", &params->useCoherentStates);
@@ -109,8 +117,10 @@ void imgui_controls(void *void_params) {
     }
     s_selection_set(params->CLICK_ACTION_NORMAL, params->clickActionNormal.selected);
     ImGui::Text("If 'Squeezed' selected:");
-    ImGui::SliderFloat("Global squeezing factor (compared to coherent)", &params->squeezedFactorGlobal, 0.5, 10.0);
-    ImGui::SliderFloat("Squeeze factor for an individual normal mode", &params->squeezedFactor, 0.5, 10.0);
+    if (ImGui::SliderFloat("Global squeezing factor (compared to coherent)", &params->squeezedFactorGlobal, 0.5, 10.0))
+           s_sim_params_set(params->SQUEEZED_FACTOR_GLOBAL, params->squeezedFactorGlobal);
+    if (ImGui::SliderFloat("Squeeze factor for an individual normal mode", &params->squeezedFactor, 0.5, 10.0))
+           s_sim_params_set(params->SQUEEZED_FACTOR, params->squeezedFactor);
     ImGui::Text("(Click on a normal mode for this slider to take effect)");
     ImGui::Text("If 'Energy eigenstate' selected:");
     ImGui::Checkbox("Click on normal mode to add energy", &params->addEnergy);
@@ -118,7 +128,12 @@ void imgui_controls(void *void_params) {
 
 }
 
+bool outside_gui() {{
+    return !global_io.WantCaptureMouse;
+}}
+
 void display_gui(void *data) {{
+    global_io = ImGui::GetIO();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();

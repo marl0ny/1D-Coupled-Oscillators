@@ -8,10 +8,10 @@ ifeq ($(shell uname),Darwin)
 INCLUDE =  -I${PWD} -I${PWD}/imgui -I${PWD}/gl_wrappers -I/opt/homebrew/include
 LIBS = -ldl -L/opt/homebrew/lib -lglfw\
        -framework CoreVideo -framework OpenGL -framework IOKit\
-       -framework Cocoa -framework Carbon
+       -framework Cocoa -framework Carbon -lpng
 else
 INCLUDE =  -I${PWD} -I${PWD}/imgui -I${PWD}/gl_wrappers
-LIBS = -lm -lGL -lGLEW -lglfw
+LIBS = -lm -lGL -lGLEW -lglfw -lpng
 endif
 
 IMGUI_DIR = ${PWD}/imgui
@@ -31,9 +31,9 @@ DATA_DEPENDENCIES = parameters.json
 GENERATION_SCRIPTS = make_parameter_files.py
 GENERATED_DEPENDENCIES = parameters.hpp
 C_SOURCES =
-CPP_SOURCES = main.cpp simulation.cpp gl_wrappers.cpp glfw_window.cpp interactor.cpp configs_view.cpp harmonic.cpp metropolis.cpp histogram.cpp initial_normal_mode_wave_function.cpp multidimensional_harmonic.cpp
+CPP_SOURCES = main.cpp simulation.cpp gl_wrappers.cpp glfw_window.cpp interactor.cpp configs_view.cpp harmonic.cpp metropolis.cpp histogram.cpp initial_normal_mode_wave_function.cpp multidimensional_harmonic.cpp write_to_png.cpp
 SOURCES = ${C_SOURCES} ${CPP_SOURCES}
-OBJECTS = main.o simulation.o gl_wrappers.o glfw_window.o interactor.o configs_view.o harmonic.o metropolis.o histogram.o initial_normal_mode_wave_function.o multidimensional_harmonic.o
+OBJECTS = main.o simulation.o gl_wrappers.o glfw_window.o interactor.o configs_view.o harmonic.o metropolis.o histogram.o initial_normal_mode_wave_function.o multidimensional_harmonic.o write_to_png.o
 # SHADERS = ./shaders/*
 
 

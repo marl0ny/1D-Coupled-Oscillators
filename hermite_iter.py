@@ -83,24 +83,24 @@ def replace_ints_to_floats(expr):
     return new_expr 
 
 
-def write_case(i):
+def write_case(i, x):
     expr = simplify(hermite(i, x))
     return f"case {str(i)}: " + "return "\
         + replace_ints_to_floats(
-            re.sub("\*\*", '', str(simplify(hermite(i, x)))))\
+            re.sub("\*\*", '', str(expr)))\
         + ";"
 
 
-def write_if_statement(i):
+def write_if_statement(i, x):
     expr = simplify(hermite(i, x))
     return f"{'else ' if i > 0 else ''}if (n == {str(i)}) " + "return "\
         + replace_ints_to_floats(
-            re.sub("\*\*", '', str(simplify(hermite(i, x)))))\
+            re.sub("\*\*", '', str(expr)))\
         + ";"
 
 
 if __name__ == '__main__':
-    x = Symbol('x')
+    x_sym = Symbol('x')
     for i in range(20):
-        print(write_if_statement(i))
+        print(write_if_statement(i, x_sym))
 

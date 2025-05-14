@@ -142,6 +142,10 @@ void display_gui(void *data) {
 
 }
 
+bool outside_gui() {
+    return true;
+}
+
 #ifdef __EMSCRIPTEN__
 
 EMSCRIPTEN_BINDINGS(my_module) {

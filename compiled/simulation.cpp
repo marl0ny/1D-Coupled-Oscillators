@@ -7,6 +7,11 @@
 #include <complex>
 #include <vector>
 
+#ifndef __EMSCRIPTEN__
+#define THREAD_COUNT 8
+#include <pthread.h>
+#endif
+
 using namespace::sim_2d;
 
 using std::complex;
@@ -45,6 +50,12 @@ static WireFrame get_quad_wire_frame() {
         {0, 1, 2, 0, 2, 3},
         WireFrame::TRIANGLES
     );
+}
+
+static double get_omega(int i, int n) {
+    // return sqrt(pow(PI*(i + 1)/(n + 1), 2.0) + 0.81);
+    // return PI*(i + 1)/(n + 1);
+    return 2.0*sin(0.5*PI*(i + 1)/(n + 1));
 }
 
 Frames::Frames(const SimParams &sim_params, 
@@ -157,7 +168,7 @@ Simulation::compute_stationary_state_configurations(SimParams &sim_params) {
     std::vector<float> initial_values_pixels {};
     for (int i = 0; i < n_count; i++) {
         data.excitations[i] = m_initial_wave_func.excitations[i];
-        double omega = 2.0*sin(0.5*PI*(i + 1)/(n_count + 1));
+        double omega = get_omega(i, n_count);
         data.omega[i] = omega;
         delta[i] = (1.0 + data.excitations[i])
             *sim_params.relativeDelta*sqrt(1.0/(2*omega));
@@ -188,15 +199,12 @@ Simulation::compute_coherent_state_configurations(SimParams &sim_params) {
     std::vector<float> initial_values_pixels {};
     for (int i = 0; i < n; i++) {
         data.x0[i] = m_initial_wave_func.x[i];
-        data.p0[i] = 0.0;
-        double omega = 2.0*sin(0.5*PI*(i + 1)/(n + 1));
+        data.p0[i] = m_initial_wave_func.p[i];
+        double omega = get_omega(i, n);
         data.omega[i] = omega;
         delta[i] = sim_params.relativeDelta*sqrt(1.0/(2*omega));
-        if (sim_params.t < sim_params.dt) {
-            x[i] = data.x0[i];
-        } else {
-            x[i] = data.x0[i]*cos(data.omega[i]*sim_params.t);
-        }
+        x[i] = squeezed_avg_x(
+            data.t, data.x0[i], data.p0[i], 1.0, data.omega[i], 1.0);
         initial_values_pixels.push_back(data.x0[i]);
         initial_values_pixels.push_back(data.p0[i]);
         initial_values_pixels.push_back(data.omega[i]);
@@ -224,19 +232,16 @@ Simulation::compute_squeezed_state_configurations(SimParams &sim_params) {
     std::vector<float> initial_values_pixels {};
     for (int i = 0; i < n; i++) {
         data.x0[i] = m_initial_wave_func.x[i];
-        data.p0[i] = 0.0;
-        data.omega[i] = 2.0*sin(0.5*PI*(i + 1)/(n + 1));
+        data.p0[i] = m_initial_wave_func.p[i];
+        data.omega[i] = get_omega(i, n);
         double sigma = sqrt(1.0/(2.0*data.omega[i]));
         data.sigma0[i] = m_initial_wave_func.s[i]*sigma;
         delta[i] = sim_params.relativeDelta*
             squeezed_standard_dev(
                 data.t, data.sigma0[i], 
                 data.m, data.omega[i], data.hbar);
-        if (sim_params.t < sim_params.dt) {
-            x[i] = data.x0[i];
-        } else {
-            x[i] = data.x0[i]*cos(data.omega[i]*sim_params.t);
-        }
+        x[i] = squeezed_avg_x(
+            data.t, data.x0[i], data.p0[i], 1.0, data.omega[i], 1.0);
         initial_values_pixels.push_back(data.x0[i]);
         initial_values_pixels.push_back(data.p0[i]);
         initial_values_pixels.push_back(data.omega[i]);
@@ -264,7 +269,7 @@ compute_single_excitations_configurations(SimParams &sim_params) {
     };
     std::vector<float> initial_values_pixels {};
     for (int i = 0; i < n; i++) {
-        double omega = 2.0*sin(0.5*PI*(i + 1)/(n + 1));
+        double omega = get_omega(i, n);
         double sigma = sqrt(1.0/(2.0*omega));
         data.omega[i] = omega;
         data.coeff[i] = m_initial_wave_func.coefficients[i];
@@ -308,76 +313,65 @@ static int get_wave_func_type(const SimParams &sim_params) {
     return -1;
 }
 
-const RenderTarget &Simulation::render_view(
-    const SimParams &sim_params) {
-    m_frames.configs_view.clear();
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    if (sim_params.displayType.selected == 2) {
-        double hist_amp 
-            = sim_params.alphaBrightness*
-                (25000.0/sim_params.numberOfMCSteps);
-        for (int i = 0; i < m_hist.arr.size(); i++)
-            m_hist.arr[i] = 0.0;
-        for (int k = 0; k < sim_params.numberOfMCSteps; k++) {
-            int n = sim_params.numberOfOscillators;
-            m_hist.min_val.y = -40.0;
-            m_hist.range.y = 80.0;
-            for (int j = 0; j < n; j++)
-                if (sim_params.showNormalCoordSamples)
-                    histogram::add_data_point(
-                        m_hist, 
-                        double(j), m_configs[n*k + j] - 20.0,
-                        hist_amp);
-            m_hist.min_val.y = -20.0;
-            m_hist.range.y = 40.0;
-            Arr1D res = Arr1D(n);
-            c_sq_matrix_mul(
-                &res[0], &m_slow_dst[0], 
-                &m_configs[k*n], n);
-            c_copy(&m_configs[k*n], &res[0], n);
+void Simulation::fill_plot_color_hist(const SimParams &sim_params) {
+    double hist_amp 
+        = sim_params.alphaBrightness*
+            (25000.0/sim_params.numberOfMCSteps);
+    for (int i = 0; i < m_hist.arr.size(); i++)
+        m_hist.arr[i] = 0.0;
+    for (int k = 0; k < sim_params.numberOfMCSteps; k++) {
+        int n = sim_params.numberOfOscillators;
+        m_hist.min_val.y = -40.0;
+        m_hist.range.y = 80.0;
+        if (sim_params.showNormalCoordSamples)
             for (int j = 0; j < n; j++)
                 histogram::add_data_point(
                     m_hist, 
-                    double(j), m_configs[n*k + j] + 10.0,
+                    double(j), m_configs[n*k + j] - 20.0,
                     hist_amp);
-        }
-        m_frames.hist.set_pixels(&m_hist.arr[0]);
-        m_frames.configs_view.draw(
-            m_programs.height_map, 
-            {{"tex", &m_frames.hist}}, 
-            m_frames.quad_wire_frame
-        );
-    } else {
-        if (sim_params.showNormalCoordSamples) {
-            WireFrame wire_frame = configs_view::get_configs_view_wire_frame(
-                m_configs, 
-                sim_params.numberOfMCSteps, 
-                (sim_params.displayType.selected == 0)?
-                    configs_view::LINES_NO_ENDPOINTS:
-                    configs_view::DISCONNECTED_LINES);
-            Vec3 c = sim_params.colorOfSamples2;
-            m_frames.configs_view.draw(
-                m_programs.configs_view,
-                {
-                    {"scaleY", float(1.0F/40.0F)},
-                    {"color", 
-                            Vec4{.r=c.r, c.g, c.b, 
-                                sim_params.alphaBrightness}},
-                    {"yOffset", float(-0.5)},
-                },
-                wire_frame
-            );
-        }
-        for (int k = 0; k < sim_params.numberOfMCSteps; k++) {
-            int n = sim_params.numberOfOscillators;
-            Arr1D res = Arr1D(n);
-            c_sq_matrix_mul(
-                &res[0], &m_slow_dst[0], 
-                &m_configs[k*n], n);
-            c_copy(&m_configs[k*n], &res[0], n);
-        }
+        m_hist.min_val.y = -20.0;
+        m_hist.range.y = 40.0;
+        Arr1D res = Arr1D(n);
+        c_sq_matrix_mul(
+            &res[0], &m_slow_dst[0], 
+            &m_configs[k*n], n);
+        c_copy(&m_configs[k*n], &res[0], n);
+        for (int j = 0; j < n; j++)
+            histogram::add_data_point(
+                m_hist, 
+                double(j), m_configs[n*k + j] + 10.0,
+                hist_amp);
     }
+    m_frames.hist.set_pixels(&m_hist.arr[0]);
+    m_frames.configs_view.draw(
+        m_programs.height_map, 
+        {{"tex", &m_frames.hist}}, 
+        m_frames.quad_wire_frame
+    );
+}
+
+void Simulation::plot_non_hist_normals(const SimParams &sim_params) {
+    WireFrame wire_frame = configs_view::get_configs_view_wire_frame(
+        m_configs, 
+        sim_params.numberOfMCSteps, 
+        (sim_params.displayType.selected == 0)?
+            configs_view::LINES_NO_ENDPOINTS:
+            configs_view::DISCONNECTED_LINES);
+    Vec3 c = sim_params.colorOfSamples2;
+    m_frames.configs_view.draw(
+        m_programs.configs_view,
+        {
+            {"scaleY", float(1.0F/40.0F)},
+            {"color", 
+                    Vec4{.r=c.r, c.g, c.b, 
+                        sim_params.alphaBrightness}},
+            {"yOffset", float(-0.5)},
+        },
+        wire_frame
+    );
+}
+
+void Simulation::plot_exact_normals(const SimParams &sim_params) {
     m_frames.configs_view.draw(
         m_programs.modes,
         {
@@ -394,23 +388,111 @@ const RenderTarget &Simulation::render_view(
         },
         m_frames.quad_wire_frame
     );
-    if (sim_params.displayType.selected == 0 ||
-        sim_params.displayType.selected == 1) {
-        WireFrame wire_frame = configs_view::get_configs_view_wire_frame(
-            m_configs, sim_params.numberOfMCSteps,
-            (sim_params.displayType.selected == 0)?
-                configs_view::LINES_WITH_ZERO_ENDPOINTS:
-                configs_view::DISCONNECTED_LINES);
-        Vec3 c = sim_params.colorOfSamples1;
-        m_frames.configs_view.draw(
-            m_programs.configs_view,
-            {
-                {"scaleY", float(1.0F/20.0F)},
-                {"color", Vec4{.r=c.r, c.g, c.b, sim_params.alphaBrightness}},
-                {"yOffset", float(0.5)},
-            },
-            wire_frame
+}
+
+void Simulation::plot_non_hist_positions(const SimParams &sim_params) {
+    WireFrame wire_frame = configs_view::get_configs_view_wire_frame(
+        m_configs, sim_params.numberOfMCSteps,
+        (sim_params.displayType.selected == 0)?
+            configs_view::LINES_WITH_ZERO_ENDPOINTS:
+            configs_view::DISCONNECTED_LINES);
+    Vec3 c = sim_params.colorOfSamples1;
+    m_frames.configs_view.draw(
+        m_programs.configs_view,
+        {
+            {"scaleY", float(1.0F/20.0F)},
+            {"color", Vec4{.r=c.r, c.g, c.b, sim_params.alphaBrightness}},
+            {"yOffset", float(0.5)},
+        },
+        wire_frame
+    );
+}
+
+#ifdef THREAD_COUNT
+
+struct Normals2PositionsThreadData {
+    double *configs;
+    const double *transform_mat;
+    int num_oscillators;
+    int count;
+};
+
+static void *normals2positions_mt(void *void_data) {
+    struct Normals2PositionsThreadData *data 
+        = (Normals2PositionsThreadData *)void_data;
+    double *configs = data->configs;
+    const double *transform_mat = data->transform_mat;
+    int count = data->count;
+    int num_oscillators = data->num_oscillators;
+    double res[512] = {0.0,};
+    for (int k = 0; k < count; k++) {
+        c_sq_matrix_mul(
+            res, transform_mat, 
+            &configs[k*num_oscillators], num_oscillators);
+        c_copy(&configs[k*num_oscillators], res, num_oscillators);
+    }
+    return NULL;
+}
+
+pthread_t s_threads[THREAD_COUNT] = {};
+Normals2PositionsThreadData s_thread_data[THREAD_COUNT] = {};
+
+#endif
+
+void Simulation::normals2positions(const SimParams &sim_params) {
+    #ifndef THREAD_COUNT
+    for (int k = 0; k < sim_params.numberOfMCSteps; k++) {
+        int n = sim_params.numberOfOscillators;
+        Arr1D res = Arr1D(n);
+        c_sq_matrix_mul(
+            &res[0], &m_slow_dst[0], 
+            &m_configs[k*n], n);
+        c_copy(&m_configs[k*n], &res[0], n);
+    }
+    #else
+    int num_oscillators = sim_params.numberOfOscillators;
+    int ac_thread_count = THREAD_COUNT;
+    if ((m_configs.size()/num_oscillators) < 100)
+        ac_thread_count = 2;
+    int count_per_thread = (m_configs.size()/num_oscillators)/ac_thread_count;
+    for (int i = 0; i < ac_thread_count; i++) {
+        s_thread_data[i].configs
+            = &((double *)&m_configs[0])[
+                i*(count_per_thread*num_oscillators)];
+        s_thread_data[i].count = (i == ac_thread_count - 1)?
+            (m_configs.size()/num_oscillators
+             - (ac_thread_count - 1)*(count_per_thread)):
+            count_per_thread;
+        s_thread_data[i].num_oscillators = sim_params.numberOfOscillators;
+        s_thread_data[i].transform_mat = &m_slow_dst[0];
+        pthread_create(
+            &s_threads[i], NULL, normals2positions_mt,
+            (void *)&s_thread_data[i]
         );
+    }
+    for (int i = 0; i < ac_thread_count; i++)
+        pthread_join(s_threads[i], NULL);
+    #endif
+}
+
+const RenderTarget &Simulation::render_view(
+    const SimParams &sim_params) {
+    m_frames.configs_view.clear();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    enum DisplayType {LINES=0, SCATTER=1, COLOR_HIST=2};
+    if (sim_params.displayType.selected == DisplayType::COLOR_HIST) {
+        this->fill_plot_color_hist(sim_params);
+    } else {
+        if (sim_params.showNormalCoordSamples)
+            this->plot_non_hist_normals(sim_params);
+        this->normals2positions(sim_params);
+    }
+    if (sim_params.modesBrightness > 0.0)
+        this->plot_exact_normals(sim_params);
+    if (sim_params.displayType.selected == DisplayType::LINES ||
+        sim_params.displayType.selected == DisplayType::SCATTER) {
+        this->plot_non_hist_positions(sim_params);
     }
     glDisable(GL_BLEND);
     m_frames.view.draw(
@@ -482,9 +564,13 @@ void Simulation::cursor_set_initial_wave_function(
                 if (sim_params.clickActionNormal.selected 
                     == ADD_AMPLITUDE) {
                     double omega 
-                        = 2.0*sin(0.5*PI*(i + 1)
-                         / (sim_params.numberOfOscillators + 1));
-                    m_initial_wave_func.x[i] *= cos(omega*t);
+                        = get_omega(i, sim_params.numberOfOscillators);
+                    m_initial_wave_func.x[i] = squeezed_avg_x(
+                        t, m_initial_wave_func.x[i], m_initial_wave_func.p[i],
+                        1.0, omega, 1.0);
+                    // m_initial_wave_func.p[i] = squeezed_avg_p(
+                    //     t, m_initial_wave_func.x[i], m_initial_wave_func.p[i],
+                    //     1.0, omega, 1.0);
                 }
                 if (i == oscillator_pos) {
                     m_initial_wave_func.x[i] = 80.0*(cursor_pos.y - 0.25);
@@ -493,8 +579,10 @@ void Simulation::cursor_set_initial_wave_function(
                             = 1.0/sim_params.squeezedFactor;
                 } else {
                     if (sim_params.clickActionNormal.selected 
-                        == REPLACE_AMPLITUDE)
+                        == REPLACE_AMPLITUDE) {
                         m_initial_wave_func.x[i] = 0.0;
+                        m_initial_wave_func.p[i] = 0.0;
+                    }
                 }
             } else if (sim_params.useSingleExcitations) {
                 m_initial_wave_func.coefficients[i] =
@@ -506,15 +594,9 @@ void Simulation::cursor_set_initial_wave_function(
             Arr1D tmp(sim_params.numberOfOscillators);
             for (int i = 0; i < sim_params.numberOfOscillators; i++) {
                 int n = sim_params.numberOfOscillators;
+                m_initial_wave_func.p[i] = 0.0;
                 tmp[i] = 40.0*(cursor_pos.y - 0.75)*
                     exp(-0.5*pow((double(i) - oscillator_pos)/(n*0.05), 2.0));
-                // if (sim_params.clickAction.selected == ADD_AMPLITUDE)
-                //     tmp[i] += m_initial_wave_func.x[i]*
-                //            cos(data.omega[i]*sim_params.t);
-                // if (i == oscillator_pos)
-                //     tmp[i] = 40.0*(cursor_pos.y - 0.75);
-                // else
-                //     tmp[i] = 0.0;
             }
             c_sq_matrix_mul(
                 &(m_initial_wave_func.x[0]), &m_slow_dst[0], &tmp[0],

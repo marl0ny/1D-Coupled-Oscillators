@@ -24,8 +24,8 @@ MetropolisResultInfo metropolis(
     Arr1D x_curr(x0);
     int size = x0.size();
     Arr1D x_next(size);
+    double prob_curr = dist_func(x_curr, params);
     int accepted_count = 1;
-    // The starting configuration is always accepted.
     int rejection_count = 0;
     if (configs.size() != size*steps)
         configs.resize(size*steps);
@@ -34,10 +34,10 @@ MetropolisResultInfo metropolis(
             configs[step_count*size + k] = x_curr[k];
             x_next[k] = x_curr[k] + delta[k]*(rand(rand_engine) - 0.5);
         }
-        double prob_curr = dist_func(x_curr, params);
         double prob_next = dist_func(x_next, params);
         if (prob_next >= prob_curr ||
             rand(rand_engine) <= prob_next/prob_curr) {
+            prob_curr = prob_next;
             x_curr = x_next;
             accepted_count++;
         } else {

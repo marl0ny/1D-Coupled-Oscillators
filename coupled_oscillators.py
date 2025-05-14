@@ -3,7 +3,7 @@ classical coupled 1D harmonic oscillator system in terms of their real
 positions agree with the equations derived in normal coordinates.
 
 The leftmost and rightmost oscillators are clamped in place so that their
-positions will always be set to zero; with these boundary conditions the 
+positions are always set to zero; with these boundary conditions the 
 discrete sine transformation can be used to get the oscillator positions
 in normal coordinates.
 """
@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 from scipy.fft import dst
+
 
 N = 100  # Number of oscillators that are free to move
 MASS = 1.0  # Mass of each oscillator

@@ -59,5 +59,17 @@ double squeezed_standard_dev(
     double t,
     double sigma0, double m, double omega, double hbar);
 
+double squeezed_avg_x(
+    double t,
+    double x0, double p0,
+    double m, double omega, double hbar
+);
+
+double squeezed_avg_p(
+    double t,
+    double x0, double p0,
+    double m, double omega, double hbar
+);
+
 #endif
 

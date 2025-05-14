@@ -485,6 +485,11 @@ def write_typed_sim_parameters_hpp(parameters, name_space, dst_file_name):
                 12*" " + f"case {camel_to_snake(k, scream=True)}:\n"
             file_contents += 12*" " + f"{k}[index] = val;\n"
             file_contents += 12*" " + "break;\n"
+        elif type_ in ["Label"]:
+            file_contents += \
+                12*" " + f"case {camel_to_snake(k, scream=True)}:\n"
+            file_contents += 12*" " + f"{k} = val;\n"
+            file_contents += 12*" " + "break;\n"
     file_contents += '        }\n'
     file_contents += '    }\n'
 
@@ -525,16 +530,10 @@ static std::function<void(int, std::string, float)>
     s_sim_params_set_user_float_param;
 
 static ImGuiIO global_io;
-
+static std::map<int, std::string> global_labels;
 
 void edit_label_display(int c, std::string text_content) {{
-    std::string string_val = "";
-    string_val += "editLabel(";
-    string_val += std::to_string(c);
-    string_val += ", ";
-    string_val += "\"" + text_content + "\"";
-    string_val += ");";
-    // TODO
+    global_labels[c] = text_content;
 }}
 
 void display_parameters_as_sliders(
@@ -560,12 +559,19 @@ void start_gui(void *window) {{
 
 void imgui_controls(void *void_params) {{
     SimParams *params = (SimParams *)void_params;
+    for (auto &e: global_labels)
+        params->set(e.first, 0, e.second);
 """
 
 IMGUI_CONTROLS_END = """
 }
 
+bool outside_gui() {{
+    return !global_io.WantCaptureMouse;
+}}
+
 void display_gui(void *data) {{
+    global_io = ImGui::GetIO();
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -582,11 +588,13 @@ void display_gui(void *data) {{
 """
 
 IMGUI_SLIDER_FLOAT  = \
-"""    ImGui::SliderFloat("{}", &params->{}, {}, {});
+"""    if (ImGui::SliderFloat("{}", &params->{}, {}, {}))
+           s_sim_params_set({}, {});
 """
 
 IMGUI_SLIDER_INT  = \
-"""    ImGui::SliderInt("{}", &params->{}, {}, {});
+"""    if (ImGui::SliderInt("{}", &params->{}, {}, {}))
+            s_sim_params_set({}, {});
 """
 
 IMGUI_CHECKBOX  = \
@@ -625,18 +633,25 @@ def write_imgui_controls(
                 n_elem = int(type_[-1])
                 for i in range(n_elem):
                     file_contents += IMGUI_SLIDER_FLOAT.format(
-                        f"{k}[{i}]", k + f".ind[{i}]", min_[i], max_[i]
+                        f"{k}[{i}]", k + f".ind[{i}]", min_[i], max_[i],
+                        "params->" + camel_to_snake(k, True),
+                        "params->" + k
                     )
         if 'float' in type_:
             if "min" in parameter and "max" in parameter:
                 min_, max_ = parameter["min"], parameter["max"]
                 file_contents += IMGUI_SLIDER_FLOAT.format(
-                    name, k, min_, max_)
+                    name, k, min_, max_,
+                    "params->" + camel_to_snake(k, True),
+                    "params->" + k
+                    )
         if 'int' in type_:
             if "min" in parameter and "max" in parameter:
                 min_, max_ = parameter["min"], parameter["max"]
                 file_contents += IMGUI_SLIDER_INT.format(
-                    name, k, min_, max_)
+                    name, k, min_, max_,
+                    "params->" + camel_to_snake(k, True),
+                    "params->" + k)
         if 'bool' in type_:
             file_contents += IMGUI_CHECKBOX.format(name, k)
         if 'Label' in type_:

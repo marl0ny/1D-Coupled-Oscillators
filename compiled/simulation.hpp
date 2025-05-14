@@ -48,6 +48,11 @@ class Simulation {
     void compute_squeezed_state_configurations(SimParams &sim_params);
     void compute_stationary_state_configurations(SimParams &sim_params);
     void compute_single_excitations_configurations(SimParams &sim_params);
+    void fill_plot_color_hist(const SimParams &sim_params);
+    void plot_non_hist_normals(const SimParams &sim_params);
+    void plot_non_hist_positions(const SimParams &sim_params);
+    void plot_exact_normals(const SimParams &sim_params);
+    void normals2positions(const SimParams &sim_params);
     public:
     Simulation(const SimParams &sim_params,
         int view_width, int view_height);

@@ -211,6 +211,36 @@ struct LineDivider {};
     }
     void set(int enum_val, int index, std::string val) {
         switch(enum_val) {
+            case LABEL_MONTE_CARLO:
+            labelMonteCarlo = val;
+            break;
+            case ACCEPTANCE_RATE_LABEL:
+            acceptanceRateLabel = val;
+            break;
+            case LABEL_SAMPLES:
+            labelSamples = val;
+            break;
+            case LABEL_NORMAL_MODE_WAVE_FUNC:
+            labelNormalModeWaveFunc = val;
+            break;
+            case WAVE_FUNC_CONFIG_LABEL:
+            waveFuncConfigLabel = val;
+            break;
+            case NOTE_FOR_USE_SINGLE_EXCITATIONS:
+            noteForUseSingleExcitations = val;
+            break;
+            case COHERENT_OR_SQUEEZED_SELECTED_LABEL:
+            coherentOrSqueezedSelectedLabel = val;
+            break;
+            case SQUEEZED_SELECTED_LABEL:
+            squeezedSelectedLabel = val;
+            break;
+            case SQUEEZED_STATE_REL_ST_DEV_LABEL:
+            squeezedStateRelStDevLabel = val;
+            break;
+            case ENERGY_EIGENSTATES_SELECTED_LABEL:
+            energyEigenstatesSelectedLabel = val;
+            break;
         }
     }
 };

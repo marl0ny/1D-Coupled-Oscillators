@@ -28,6 +28,8 @@ void oscillators(MainGLFWQuad main_render,
             }
             if (c == params.SQUEEZED_FACTOR_GLOBAL) {
                 sim.set_relative_standard_deviation(1.0/u.f32);
+                if (params.useSqueezed)
+                    params.t = 0.0;
             }
             params.set(c, u);
         };
@@ -60,12 +62,14 @@ void oscillators(MainGLFWQuad main_render,
             glfwPollEvents();
             interactor.click_update(main_render.get_window());
             if (pos.x > 0.0 && pos.x < 1.0 && 
-                pos.y > 0.0 && pos.y < 1.0 && interactor.left_pressed()) {
+                pos.y > 0.0 && pos.y < 1.0 && interactor.left_pressed()
+                && outside_gui()) {
+                params.t -= params.dt;
                 sim.cursor_set_initial_wave_function(params, pos);
             }
         };
-        poll_events();
         display_gui(&params);
+        poll_events();
         glfwSwapBuffers(main_render.get_window());
     };
     #ifdef __EMSCRIPTEN__
