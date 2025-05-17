@@ -4,6 +4,7 @@
 #include "configs_view.hpp"
 #include "metropolis.hpp"
 #include "histogram.hpp"
+#include "orthogonal_transforms.hpp"
 #include <complex>
 #include <vector>
 
@@ -52,10 +53,23 @@ static WireFrame get_quad_wire_frame() {
     );
 }
 
-static double get_omega(int i, int n) {
+static double get_omega(int i, int n, int boundary_type, int preset) {
+    enum {ZERO_ENDPOINTS=0, PERIODIC=1};
+    int k, size; 
+    if (boundary_type == PERIODIC) {
+        k = (n % 2)? (i - n/2): (i - n/2 + 1);
+        size = n/2;
+    } else {
+        k = i + 1;
+        size = n + 1;
+    }
+    if (preset == 0)
+        return 2.0*sin(0.5*PI*abs(k)/size);
+    else
+        return PI*abs(k)/size;
     // return sqrt(pow(PI*(i + 1)/(n + 1), 2.0) + 0.81);
     // return PI*(i + 1)/(n + 1);
-    return 2.0*sin(0.5*PI*(i + 1)/(n + 1));
+    // return 2.0*sin(0.5*PI*(i + 1)/(n + 1));
 }
 
 Frames::Frames(const SimParams &sim_params, 
@@ -134,11 +148,10 @@ Simulation::Simulation(
     int n = sim_params.numberOfOscillators;
     m_configs = Arr1D(
         sim_params.numberOfMCSteps*n);
-    m_slow_dst = Arr1D(n*n);
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            m_slow_dst[i*n + j] 
-                = 2.0*sin(PI*(i + 1)*(j + 1)/(n + 1))/sqrt(2.0*(n + 1));
+    m_positions2normals = Arr1D(n*n);
+    m_normals2positions = Arr1D(n*n);
+    this->reset_coord_transform(sim_params);
+    this->reset_omega(sim_params);
     Arr1D tmp (n);
     m_hist = {
         .dimensions=IVec2{.ind{n, (int)m_frames.hist_tex_params.height}},
@@ -152,7 +165,8 @@ Simulation::Simulation(
         tmp[i] = 10.0*exp(-0.5*pow((double(i) - n/2.0)/(n*0.05), 2.0));
         // tmp[i] = 10.0*sin(4.0*PI*(i + 1)/(n + 1));
     }
-    c_sq_matrix_mul(&m_initial_wave_func.x[0], &m_slow_dst[0], &tmp[0], n);
+    c_sq_matrix_mul(
+        &m_initial_wave_func.x[0], &m_positions2normals[0], &tmp[0], n);
 }
 
 void
@@ -168,10 +182,10 @@ Simulation::compute_stationary_state_configurations(SimParams &sim_params) {
     std::vector<float> initial_values_pixels {};
     for (int i = 0; i < n_count; i++) {
         data.excitations[i] = m_initial_wave_func.excitations[i];
-        double omega = get_omega(i, n_count);
+        double omega = m_omega[i];
         data.omega[i] = omega;
         delta[i] = (1.0 + data.excitations[i])
-            *sim_params.relativeDelta*sqrt(1.0/(2*omega));
+            *sim_params.relativeDelta*coherent_standard_dev(1.0, omega, 1.0);
         initial_values_pixels.push_back(float(data.excitations[i]));
         initial_values_pixels.push_back(0.0);
         initial_values_pixels.push_back(data.omega[i]);
@@ -200,9 +214,10 @@ Simulation::compute_coherent_state_configurations(SimParams &sim_params) {
     for (int i = 0; i < n; i++) {
         data.x0[i] = m_initial_wave_func.x[i];
         data.p0[i] = m_initial_wave_func.p[i];
-        double omega = get_omega(i, n);
+        double omega = m_omega[i];
         data.omega[i] = omega;
-        delta[i] = sim_params.relativeDelta*sqrt(1.0/(2*omega));
+        delta[i] 
+            = sim_params.relativeDelta*coherent_standard_dev(1.0, omega, 1.0);
         x[i] = squeezed_avg_x(
             data.t, data.x0[i], data.p0[i], 1.0, data.omega[i], 1.0);
         initial_values_pixels.push_back(data.x0[i]);
@@ -233,8 +248,8 @@ Simulation::compute_squeezed_state_configurations(SimParams &sim_params) {
     for (int i = 0; i < n; i++) {
         data.x0[i] = m_initial_wave_func.x[i];
         data.p0[i] = m_initial_wave_func.p[i];
-        data.omega[i] = get_omega(i, n);
-        double sigma = sqrt(1.0/(2.0*data.omega[i]));
+        data.omega[i] = m_omega[i];
+        double sigma = coherent_standard_dev(1.0, data.omega[i], 1.0);
         data.sigma0[i] = m_initial_wave_func.s[i]*sigma;
         delta[i] = sim_params.relativeDelta*
             squeezed_standard_dev(
@@ -269,8 +284,8 @@ compute_single_excitations_configurations(SimParams &sim_params) {
     };
     std::vector<float> initial_values_pixels {};
     for (int i = 0; i < n; i++) {
-        double omega = get_omega(i, n);
-        double sigma = sqrt(1.0/(2.0*omega));
+        double omega = m_omega[i];
+        double sigma = coherent_standard_dev(1.0, omega, 1.0);
         data.omega[i] = omega;
         data.coeff[i] = m_initial_wave_func.coefficients[i];
         delta[i] = sim_params.relativeDelta*sigma;
@@ -333,7 +348,7 @@ void Simulation::fill_plot_color_hist(const SimParams &sim_params) {
         m_hist.range.y = 40.0;
         Arr1D res = Arr1D(n);
         c_sq_matrix_mul(
-            &res[0], &m_slow_dst[0], 
+            &res[0], &m_normals2positions[0], 
             &m_configs[k*n], n);
         c_copy(&m_configs[k*n], &res[0], n);
         for (int j = 0; j < n; j++)
@@ -391,10 +406,16 @@ void Simulation::plot_exact_normals(const SimParams &sim_params) {
 }
 
 void Simulation::plot_non_hist_positions(const SimParams &sim_params) {
+    int continuous_line_type;
+    enum {ZERO_ENDPOINTS=0, PERIODIC=1};
+    if (sim_params.boundaryType.selected == ZERO_ENDPOINTS)
+        continuous_line_type = configs_view::LINES_WITH_ZERO_ENDPOINTS;
+    else if (sim_params.boundaryType.selected == PERIODIC)
+        continuous_line_type= configs_view::LINES_PERIODIC;
     WireFrame wire_frame = configs_view::get_configs_view_wire_frame(
         m_configs, sim_params.numberOfMCSteps,
         (sim_params.displayType.selected == 0)?
-            configs_view::LINES_WITH_ZERO_ENDPOINTS:
+            continuous_line_type:
             configs_view::DISCONNECTED_LINES);
     Vec3 c = sim_params.colorOfSamples1;
     m_frames.configs_view.draw(
@@ -445,7 +466,7 @@ void Simulation::normals2positions(const SimParams &sim_params) {
         int n = sim_params.numberOfOscillators;
         Arr1D res = Arr1D(n);
         c_sq_matrix_mul(
-            &res[0], &m_slow_dst[0], 
+            &res[0], &m_normals2positions[0], 
             &m_configs[k*n], n);
         c_copy(&m_configs[k*n], &res[0], n);
     }
@@ -464,7 +485,7 @@ void Simulation::normals2positions(const SimParams &sim_params) {
              - (ac_thread_count - 1)*(count_per_thread)):
             count_per_thread;
         s_thread_data[i].num_oscillators = sim_params.numberOfOscillators;
-        s_thread_data[i].transform_mat = &m_slow_dst[0];
+        s_thread_data[i].transform_mat = &m_normals2positions[0];
         pthread_create(
             &s_threads[i], NULL, normals2positions_mt,
             (void *)&s_thread_data[i]
@@ -505,10 +526,11 @@ const RenderTarget &Simulation::render_view(
     return m_frames.view;
 }
 
-void Simulation::reset_oscillator_count(int number_of_oscillators) {
+void Simulation::reset_oscillator_count(const SimParams &params) {
+    int n = params.numberOfOscillators;
     m_frames.initial_values_tex_params = {
         .format=GL_RGBA32F,
-        .width=(uint32_t)number_of_oscillators,
+        .width=(uint32_t)n,
         .height=(uint32_t)1,
         .wrap_s=GL_REPEAT,
         .wrap_t=GL_REPEAT,
@@ -516,17 +538,15 @@ void Simulation::reset_oscillator_count(int number_of_oscillators) {
         .mag_filter=GL_NEAREST,
     };
     m_frames.initial_values.reset(m_frames.initial_values_tex_params);
-    int n = number_of_oscillators;
-    m_slow_dst = Arr1D(n*n);
+    m_normals2positions = Arr1D(n*n);
+    m_positions2normals = Arr1D(n*n);
     m_initial_wave_func.resize(n);
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < n; j++)
-            m_slow_dst[i*n + j] 
-                = 2.0*sin(PI*(i + 1)*(j + 1)/(n + 1))/sqrt(2.0*(n + 1));
+    this->reset_coord_transform(params);
+    this->reset_omega(params);
     int view_height = m_frames.configs_view.texture_dimensions()[1];
     m_frames.hist_tex_params = {
         .format=GL_R32F,
-        .width=(uint32_t)number_of_oscillators,
+        .width=(uint32_t)n,
         .height=(uint32_t)view_height/2,
         .wrap_s=GL_REPEAT,
         .wrap_t=GL_REPEAT,
@@ -539,6 +559,65 @@ void Simulation::reset_oscillator_count(int number_of_oscillators) {
         .min_val={.x=0.0, -20.0}, .range={.x=float(n), .y=40.0},
         .arr=std::vector<float>(n*m_frames.hist_tex_params.height)
     };
+}
+
+void Simulation::reset_omega(const SimParams &sim_params) {
+    for (int i = 0; i < sim_params.numberOfOscillators; i++)
+        m_omega[i] = get_omega(
+            i, sim_params.numberOfOscillators, 
+            sim_params.boundaryType.selected, 
+            sim_params.presetDispersionRelation.selected);
+}
+
+void Simulation::reset_coord_transform(const SimParams &sim_params) {
+    enum {ZERO_ENDPOINTS=0, PERIODIC=1};
+    if (sim_params.boundaryType.selected == ZERO_ENDPOINTS) {
+        make_dst(
+            m_positions2normals, m_normals2positions,
+            sim_params.numberOfOscillators);
+    } else if (sim_params.boundaryType.selected == PERIODIC) {
+        make_dsct(
+            m_positions2normals, m_normals2positions,
+            sim_params.numberOfOscillators);
+    }
+}
+
+void Simulation::modify_boundaries(const SimParams &sim_params) {
+    int n = sim_params.numberOfOscillators;
+    std::vector<double> x0(n), p0(n);
+    if (sim_params.useCoherentStates || sim_params.useSqueezed) {
+        for (int i = 0; i < n; i++) {
+            x0[i] = m_initial_wave_func.x[i];
+            p0[i] = m_initial_wave_func.p[i];
+            m_initial_wave_func.x[i] = squeezed_avg_x(
+                sim_params.t, x0[i], p0[i],
+                1.0, m_omega[i], 1.0);
+            m_initial_wave_func.p[i] = squeezed_avg_p(
+                sim_params.t, x0[i], p0[i],
+                1.0, m_omega[i], 1.0);
+        }
+        c_sq_matrix_mul(
+            &x0[0], 
+            &m_normals2positions[0], &m_initial_wave_func.x[0], n);
+        c_sq_matrix_mul(
+            &p0[0], 
+            &m_normals2positions[0], &m_initial_wave_func.p[0], n);
+        m_initial_wave_func.set_s_to_ones();
+    } else if (sim_params.useSingleExcitations) {
+        m_initial_wave_func.zero_coefficients();
+    } else if (sim_params.useStationary) {
+        m_initial_wave_func.zero_excitations();
+    }
+    this->reset_omega(sim_params);
+    this->reset_coord_transform(sim_params);
+    if (sim_params.useCoherentStates || sim_params.useSqueezed) {
+        c_sq_matrix_mul(
+            &m_initial_wave_func.x[0], 
+            &m_positions2normals[0], &x0[0], n);
+        c_sq_matrix_mul(
+            &m_initial_wave_func.p[0], 
+            &m_positions2normals[0], &p0[0], n);
+    }
 }
 
 void Simulation::cursor_set_initial_wave_function(
@@ -563,8 +642,7 @@ void Simulation::cursor_set_initial_wave_function(
                          sim_params.useSqueezed) {
                 if (sim_params.clickActionNormal.selected 
                     == ADD_AMPLITUDE) {
-                    double omega 
-                        = get_omega(i, sim_params.numberOfOscillators);
+                    double omega = m_omega[i];
                     m_initial_wave_func.x[i] = squeezed_avg_x(
                         t, m_initial_wave_func.x[i], m_initial_wave_func.p[i],
                         1.0, omega, 1.0);
@@ -599,7 +677,7 @@ void Simulation::cursor_set_initial_wave_function(
                     exp(-0.5*pow((double(i) - oscillator_pos)/(n*0.05), 2.0));
             }
             c_sq_matrix_mul(
-                &(m_initial_wave_func.x[0]), &m_slow_dst[0], &tmp[0],
+                &(m_initial_wave_func.x[0]), &m_positions2normals[0], &tmp[0],
                 sim_params.numberOfOscillators);
         } else if (sim_params.useSingleExcitations) {
             int n = sim_params.numberOfOscillators;

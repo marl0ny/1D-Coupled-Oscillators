@@ -62,6 +62,16 @@ complex conj(complex z) {
     return complex(z[0], -z[1]);
 }
 
+float getTallThinGaussianStandardDev() {
+    return 0.01;
+}
+
+complex tallThinGaussian(float x, float x0) {
+    float s = getTallThinGaussianStandardDev();
+    return complex(
+        exp(-0.25*pow((x - x0)/s, 2.0))/sqrt(s*sqrt(2.0*PI)), 0.0);
+}
+
 /* Formula for the harmonic oscillator coherent state from
 Shankar, pg. 610, equation 21.1.132 in exercise 21.2.18. */
 complex coherentState(
@@ -69,6 +79,8 @@ complex coherentState(
     float x0, float p0,
     float m, float omega, float hbar
 ) {
+    if (omega == 0.0)
+        return tallThinGaussian(x, x0);
     complex z = complex(sqrt((m*omega)/(2.0*hbar))*x0,
                         sqrt(1.0/(2.0*m*omega*hbar))*p0);
     z = mul(z, expI(-omega*t));
@@ -117,6 +129,8 @@ complex stationaryState(
     int n, float x, float t,
     float m, float omega, float hbar
 ) {
+    if (omega == 0.0)
+        return tallThinGaussian(x, 0.0);
     complex i = complex(0.0, 1.0);
     float normFactor = 
         pow(m*omega/(PI*hbar), 0.25)
@@ -190,6 +204,8 @@ complex squeezedState(
     float x0, float p0, float sigma0,
     float m, float omega, float hbar
 ) {
+    if (omega == 0.0)
+        return tallThinGaussian(x, x0);
     float c = cos(t*omega), s = sin(t*omega);
     float hbar2 = hbar*hbar;
     float m2 = m*m;
@@ -253,6 +269,8 @@ void main() {
         amplitude = squeezedState(x, t, x0, p0, sigma, m, omega, hbar);
     else if (waveFunctionType == ENERGY_EIGENSTATE)
         amplitude = stationaryState(n, x, t, m, omega, hbar);
+    if (dot(amplitude, amplitude) == 1.0/0.0)
+        amplitude = complex(0.0, 0.0);
     if (colorPhase)
         fragColor = brightness*vec4(
             argumentToColor(atan(amplitude.y, amplitude.x)),

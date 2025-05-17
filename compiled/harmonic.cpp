@@ -103,12 +103,23 @@ static double hermite(size_t n, double x) {
     }
 }
 
+static double get_tall_thin_gaussian_standard_dev() {
+    return 0.01;
+}
+
+static complex<double> tall_thin_gaussian(double x, double x0) {
+    double s = get_tall_thin_gaussian_standard_dev();
+    return exp(-0.25*pow((x - x0)/s, 2.0))/sqrt(s*sqrt(2.0*PI));
+}
+
 /* Energy eigenstates for the harmonic oscillator referenced from
 Shankar, pg 195, eq 7.3.22.*/
 complex<double> stationary_state(
     size_t n, double x, double t,
     double m, double omega, double hbar
 ) {
+    if (omega == 0.0)
+        return tall_thin_gaussian(x, 0.0);
     complex<double> i (0.0, 1.0);
     double norm_factor = pow(
         m*omega/(PI*hbar*pow(2.0, 2.0*n)*pow(factorial(n), 2.0)), 0.25);
@@ -139,6 +150,8 @@ complex<double> coherent_state(
     double x0, double p0,
     double m, double omega, double hbar
 ) {
+    if (omega == 0.0)
+        return tall_thin_gaussian(x, x0);
     complex<double> i (0.0, 1.0);
     complex<double> z = 
         sqrt((m*omega)/(2.0*hbar))*x0
@@ -204,6 +217,8 @@ std::complex<double> squeezed_state(
     double x0, double p0, double sigma0,
     double m, double omega, double hbar, bool omit_phase
 ) {
+    if (omega == 0.0)
+        return tall_thin_gaussian(x, x0);
     double c = cos(t*omega), s = sin(t*omega);
     double hbar2 = hbar*hbar;
     double m2 = m*m;
@@ -220,9 +235,18 @@ std::complex<double> squeezed_state(
         *phase_factor;
 }
 
+double coherent_standard_dev(
+    double m, double omega, double hbar) {
+    if (omega == 0.0)
+        return get_tall_thin_gaussian_standard_dev();
+    return sqrt(hbar/(2.0*m*omega));
+}
+
 double squeezed_standard_dev(
     double t,
     double sigma0, double m, double omega, double hbar) {
+    if (omega == 0.0)
+        return get_tall_thin_gaussian_standard_dev();
     double c = cos(t*omega), s = sin(t*omega);
     double hbar2 = hbar*hbar;
     double omega2 = omega*omega;
@@ -237,6 +261,8 @@ double squeezed_avg_x(
     double x0, double p0,
     double m, double omega, double hbar
 ) {
+    if (omega == 0.0)
+        return x0;
     return x0*cos(t*omega) + p0*sin(t*omega)/(m*omega);
 }
 
@@ -245,5 +271,7 @@ double squeezed_avg_p(
     double x0, double p0,
     double m, double omega, double hbar
 ) {
+    if (omega == 0.0)
+        return 0.0;
     return -omega*x0*sin(t*omega) + (p0/m)*cos(t*omega);
 }

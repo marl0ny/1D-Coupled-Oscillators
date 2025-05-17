@@ -38,6 +38,9 @@ std::complex<double> coherent_states_combination(
     std::vector<double> x0, std::vector<double> p0,
     double m, double omega, double hbar);
 
+double coherent_standard_dev(
+    double m, double omega, double hbar);
+
 /*
 If the initial wave function in a harmonic oscillator is a Gaussian at t=0,
 get it for all subsequent times by integrating this initial wave function 

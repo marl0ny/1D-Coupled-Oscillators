@@ -31,9 +31,15 @@ DATA_DEPENDENCIES = parameters.json
 GENERATION_SCRIPTS = make_parameter_files.py
 GENERATED_DEPENDENCIES = parameters.hpp
 C_SOURCES =
-CPP_SOURCES = main.cpp simulation.cpp gl_wrappers.cpp glfw_window.cpp interactor.cpp configs_view.cpp harmonic.cpp metropolis.cpp histogram.cpp initial_normal_mode_wave_function.cpp multidimensional_harmonic.cpp write_to_png.cpp
+CPP_SOURCES = main.cpp simulation.cpp gl_wrappers.cpp glfw_window.cpp \
+	interactor.cpp configs_view.cpp harmonic.cpp metropolis.cpp histogram.cpp\
+	initial_normal_mode_wave_function.cpp multidimensional_harmonic.cpp \
+	write_to_png.cpp parse.cpp orthogonal_transforms.cpp
 SOURCES = ${C_SOURCES} ${CPP_SOURCES}
-OBJECTS = main.o simulation.o gl_wrappers.o glfw_window.o interactor.o configs_view.o harmonic.o metropolis.o histogram.o initial_normal_mode_wave_function.o multidimensional_harmonic.o write_to_png.o
+OBJECTS = main.o simulation.o gl_wrappers.o glfw_window.o \
+	interactor.o configs_view.o harmonic.o metropolis.o histogram.o\
+	initial_normal_mode_wave_function.o multidimensional_harmonic.o \
+	write_to_png.o parse.o orthogonal_transforms.o
 # SHADERS = ./shaders/*
 
 

@@ -39,7 +39,9 @@ class Simulation {
     Frames m_frames;
     histogram::Histogram2D m_hist;
     std::vector<double> m_configs;  // Stores the Monte Carlo samples
-    std::vector<double> m_slow_dst;
+    std::vector<double> m_positions2normals;
+    std::vector<double> m_normals2positions;
+    double m_omega[MAX_SIZE];  // Stores the angular frequencies
     // The above stores the transform matrix that takes the the position
     // of the oscillator in position coordinates and gives it in normal
     // coordinates.
@@ -53,12 +55,15 @@ class Simulation {
     void plot_non_hist_positions(const SimParams &sim_params);
     void plot_exact_normals(const SimParams &sim_params);
     void normals2positions(const SimParams &sim_params);
+    void reset_coord_transform(const SimParams &sim_params);
     public:
     Simulation(const SimParams &sim_params,
         int view_width, int view_height);
     void compute_configurations(SimParams &sim_params);
     const RenderTarget &render_view(const SimParams &sim_params);
-    void reset_oscillator_count(int number_of_oscillators);
+    void reset_oscillator_count(const SimParams &sim_params);
+    void reset_omega(const SimParams &sim_params);
+    void modify_boundaries(const SimParams &sim_params);
     void cursor_set_initial_wave_function(
         SimParams &sim_params, Vec2 cursor_pos);
     void set_relative_standard_deviation(float val);

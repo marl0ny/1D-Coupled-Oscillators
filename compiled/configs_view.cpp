@@ -83,6 +83,37 @@ static std::vector<float> get_vertices_set_elements_with_endpoints(
     return vertices;
 }
 
+static std::vector<float> get_vertices_set_elements_periodic(
+    const std::vector<double> &configs, std::vector<int> &elements,
+    int number_of_configs
+) {
+    int elem_count = 0;
+    std::vector<float> vertices {};
+    int row_size = configs.size()/number_of_configs;
+    for (int row_count = 0; row_count < number_of_configs; row_count++) {
+        vertices.push_back(-1.0);
+        vertices.push_back((float)configs[row_count*row_size + row_size -1]);
+        // elements.push_back(elem_count);
+        elem_count++;
+        for (int column_count = 0; column_count < row_size;
+             column_count++) {
+            float x_pos = -1.0 + 2.0*(column_count + 1)/float(row_size + 1);
+            float y_pos = (float)configs[row_count*row_size + column_count];
+            vertices.push_back(x_pos);
+            vertices.push_back(y_pos);
+            elements.push_back(elem_count-1);
+            elements.push_back(elem_count);
+            elem_count++;
+        }
+        vertices.push_back(1.0);
+        vertices.push_back((float)configs[row_count*row_size]);
+        elements.push_back(elem_count-1);
+        elements.push_back(elem_count);
+        elem_count++;
+    }
+    return vertices;
+}
+
 WireFrame configs_view::get_configs_view_wire_frame(
     const std::vector<double> &configs, int number_of_configs, int view_type
 ) {
@@ -95,6 +126,10 @@ WireFrame configs_view::get_configs_view_wire_frame(
         break;
         case LINES_WITH_ZERO_ENDPOINTS:
         vertices = get_vertices_set_elements_with_endpoints(
+            configs, elements, number_of_configs);
+        break;
+        case LINES_PERIODIC:
+        vertices = get_vertices_set_elements_periodic(
             configs, elements, number_of_configs);
         break;
         case DISCONNECTED_LINES:

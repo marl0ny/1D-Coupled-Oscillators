@@ -29,6 +29,9 @@ struct InitialNormalModeWaveFunction {
     std::complex<double> coefficients[MAX_SIZE];
     InitialNormalModeWaveFunction(size_t size);
     void resize(size_t new_size);  // Change the number of normal modes.
+    void zero_excitations();
+    void zero_coefficients();
+    void set_s_to_ones();
 };
 
 #endif

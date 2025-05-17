@@ -23,6 +23,7 @@ struct LineDivider {};
     float dt = (float)(0.1F);
     float t = (float)(0.0F);
     int numberOfOscillators = (int)(64);
+    SelectionList boundaryType = SelectionList{0, {"Zero at endpoints", "Periodic"}};
     LineDivider lineDivMonteCarlo = LineDivider{};
     Label labelMonteCarlo = Label{};
     float relativeDelta = (float)(0.66F);
@@ -56,44 +57,53 @@ struct LineDivider {};
     Label energyEigenstatesSelectedLabel = Label{};
     bool addEnergy = (bool)(true);
     bool removeEnergy = (bool)(false);
+    LineDivider lineDivAdditionalOptions = LineDivider{};
+    Label DispersionOptionsLabel = Label{};
+    SelectionList presetDispersionRelation = SelectionList{0, {"2*sin((pi/2)*(abs(k)/k_max))", "pi*(abs(k)/k_max)"}};
+    EntryBoxes dispersionRelation = EntryBoxes{"2*sin(pi/2*(k + 1)/(n + 1))"};
     enum {
         STEPS_PER_FRAME=0,
         DT=1,
         T=2,
         NUMBER_OF_OSCILLATORS=3,
-        LINE_DIV_MONTE_CARLO=4,
-        LABEL_MONTE_CARLO=5,
-        RELATIVE_DELTA=6,
-        ACCEPTANCE_RATE_LABEL=7,
-        ACCEPTANCE_RATE=8,
-        NUMBER_OF_M_C_STEPS=9,
-        LINE_DIV_SAMPLE_COLOR=10,
-        LABEL_SAMPLES=11,
-        ALPHA_BRIGHTNESS=12,
-        COLOR_OF_SAMPLES1=13,
-        COLOR_OF_SAMPLES2=14,
-        DISPLAY_TYPE=15,
-        SHOW_NORMAL_COORD_SAMPLES=16,
-        LINE_DIV_NORMAL_MODE_WAVE_FUNC=17,
-        LABEL_NORMAL_MODE_WAVE_FUNC=18,
-        COLOR_PHASE=19,
-        MODES_BRIGHTNESS=20,
-        LINE_DIV_WAVE_FUNC_OPTIONS=21,
-        WAVE_FUNC_CONFIG_LABEL=22,
-        USE_COHERENT_STATES=23,
-        USE_SQUEEZED=24,
-        USE_STATIONARY=25,
-        USE_SINGLE_EXCITATIONS=26,
-        NOTE_FOR_USE_SINGLE_EXCITATIONS=27,
-        COHERENT_OR_SQUEEZED_SELECTED_LABEL=28,
-        CLICK_ACTION_NORMAL=29,
-        SQUEEZED_SELECTED_LABEL=30,
-        SQUEEZED_FACTOR_GLOBAL=31,
-        SQUEEZED_FACTOR=32,
-        SQUEEZED_STATE_REL_ST_DEV_LABEL=33,
-        ENERGY_EIGENSTATES_SELECTED_LABEL=34,
-        ADD_ENERGY=35,
-        REMOVE_ENERGY=36,
+        BOUNDARY_TYPE=4,
+        LINE_DIV_MONTE_CARLO=5,
+        LABEL_MONTE_CARLO=6,
+        RELATIVE_DELTA=7,
+        ACCEPTANCE_RATE_LABEL=8,
+        ACCEPTANCE_RATE=9,
+        NUMBER_OF_M_C_STEPS=10,
+        LINE_DIV_SAMPLE_COLOR=11,
+        LABEL_SAMPLES=12,
+        ALPHA_BRIGHTNESS=13,
+        COLOR_OF_SAMPLES1=14,
+        COLOR_OF_SAMPLES2=15,
+        DISPLAY_TYPE=16,
+        SHOW_NORMAL_COORD_SAMPLES=17,
+        LINE_DIV_NORMAL_MODE_WAVE_FUNC=18,
+        LABEL_NORMAL_MODE_WAVE_FUNC=19,
+        COLOR_PHASE=20,
+        MODES_BRIGHTNESS=21,
+        LINE_DIV_WAVE_FUNC_OPTIONS=22,
+        WAVE_FUNC_CONFIG_LABEL=23,
+        USE_COHERENT_STATES=24,
+        USE_SQUEEZED=25,
+        USE_STATIONARY=26,
+        USE_SINGLE_EXCITATIONS=27,
+        NOTE_FOR_USE_SINGLE_EXCITATIONS=28,
+        COHERENT_OR_SQUEEZED_SELECTED_LABEL=29,
+        CLICK_ACTION_NORMAL=30,
+        SQUEEZED_SELECTED_LABEL=31,
+        SQUEEZED_FACTOR_GLOBAL=32,
+        SQUEEZED_FACTOR=33,
+        SQUEEZED_STATE_REL_ST_DEV_LABEL=34,
+        ENERGY_EIGENSTATES_SELECTED_LABEL=35,
+        ADD_ENERGY=36,
+        REMOVE_ENERGY=37,
+        LINE_DIV_ADDITIONAL_OPTIONS=38,
+        DISPERSION_OPTIONS_LABEL=39,
+        PRESET_DISPERSION_RELATION=40,
+        DISPERSION_RELATION=41,
     };
     void set(int enum_val, Uniform val) {
         switch(enum_val) {
@@ -240,6 +250,12 @@ struct LineDivider {};
             break;
             case ENERGY_EIGENSTATES_SELECTED_LABEL:
             energyEigenstatesSelectedLabel = val;
+            break;
+            case DISPERSION_OPTIONS_LABEL:
+            DispersionOptionsLabel = val;
+            break;
+            case DISPERSION_RELATION:
+            dispersionRelation[index] = val;
             break;
         }
     }

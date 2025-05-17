@@ -62,8 +62,14 @@ void imgui_controls(void *void_params) {
         params->set(e.first, 0, e.second);
     if (ImGui::SliderFloat("Time elapsed per frame", &params->dt, 0.0, 10.0))
            s_sim_params_set(params->DT, params->dt);
-    if (ImGui::SliderInt("Number of oscillators", &params->numberOfOscillators, 8, 512))
+    if (ImGui::SliderInt("Number of oscillators", &params->numberOfOscillators, 8, 256))
             s_sim_params_set(params->NUMBER_OF_OSCILLATORS, params->numberOfOscillators);
+    if (ImGui::BeginMenu("Boundary type")) {
+        if (ImGui::MenuItem( "Zero at endpoints")) params->boundaryType.selected = 0;
+        if (ImGui::MenuItem( "Periodic")) params->boundaryType.selected = 1;
+        ImGui::EndMenu();
+    }
+    s_selection_set(params->BOUNDARY_TYPE, params->boundaryType.selected);
     ImGui::Text("--------------------------------------------------------------------------------");
     ImGui::Text("Metropolis algorithm configuration");
     if (ImGui::SliderFloat("Relative step size", &params->relativeDelta, 0.0, 1.0))
@@ -104,13 +110,13 @@ void imgui_controls(void *void_params) {
            s_sim_params_set(params->MODES_BRIGHTNESS, params->modesBrightness);
     ImGui::Text("--------------------------------------------------------------------------------");
     ImGui::Text("Wave function modification options");
-    ImGui::Checkbox("Coherent (All normal modes)", &params->useCoherentStates);
-    ImGui::Checkbox("Squeezed", &params->useSqueezed);
-    ImGui::Checkbox("Energy eigenstate (Expect poor Metropolis convergence for highly excited modes.)", &params->useStationary);
+    ImGui::Checkbox("Coherent (Single product of coherent modes)", &params->useCoherentStates);
+    ImGui::Checkbox("Squeezed (Single product)", &params->useSqueezed);
+    ImGui::Checkbox("Energy eigenstate (Expect poor Metropolis convergence for highly excited modes. Single product of normal mode eigenstates only.)", &params->useStationary);
     ImGui::Checkbox("Superposition of singly-excited normal modes", &params->useSingleExcitations);
     ImGui::Text("(Will be difficult to differentiate any differences from the ground unless a large number of samples are used.)");
     ImGui::Text("If 'Coherent' or 'Squeezed' selected:");
-    if (ImGui::BeginMenu("Behaviour when modifying a selected normal mode amplitude expectation value with mouse:")) {
+    if (ImGui::BeginMenu("Behaviour when modifying a selected normal mode amplitude expectation value with the mouse cursor:")) {
         if (ImGui::MenuItem( "Change selected; set others to zero")) params->clickActionNormal.selected = 0;
         if (ImGui::MenuItem( "Modify selection only")) params->clickActionNormal.selected = 1;
         ImGui::EndMenu();
@@ -125,6 +131,14 @@ void imgui_controls(void *void_params) {
     ImGui::Text("If 'Energy eigenstate' selected:");
     ImGui::Checkbox("Click on normal mode to add energy", &params->addEnergy);
     ImGui::Checkbox("Remove energy instead", &params->removeEnergy);
+    ImGui::Text("--------------------------------------------------------------------------------");
+    ImGui::Text("Dispersion relation options");
+    if (ImGui::BeginMenu("Preset dispersion relation ω(k)")) {
+        if (ImGui::MenuItem( "2*sin((pi/2)*(abs(k)/k_max))")) params->presetDispersionRelation.selected = 0;
+        if (ImGui::MenuItem( "pi*(abs(k)/k_max)")) params->presetDispersionRelation.selected = 1;
+        ImGui::EndMenu();
+    }
+    s_selection_set(params->PRESET_DISPERSION_RELATION, params->presetDispersionRelation.selected);
 
 }
 

@@ -23,25 +23,34 @@ void oscillators(MainGLFWQuad main_render,
     sim_2d::Simulation sim(params, window_width, window_height);
     {
         s_sim_params_set = [&params, &sim](int c, Uniform u) {
-            if (c == params.NUMBER_OF_OSCILLATORS) {
-                sim.reset_oscillator_count(u.i32);
-            }
             if (c == params.SQUEEZED_FACTOR_GLOBAL) {
                 sim.set_relative_standard_deviation(1.0/u.f32);
                 if (params.useSqueezed)
                     params.t = 0.0;
             }
             params.set(c, u);
+            if (c == params.NUMBER_OF_OSCILLATORS) {
+                sim.reset_oscillator_count(params);
+            }
         };
         s_sim_params_get = [&params](int c) -> Uniform {
             return params.get(c);
         };
-        s_selection_set = [&params](
+        s_selection_set = [&params, &sim](
             int c, int val) {
             if (c == params.DISPLAY_TYPE)
                 params.displayType.selected = val;
             if (c == params.CLICK_ACTION_NORMAL)
                 params.clickActionNormal.selected = val;
+            if (c == params.BOUNDARY_TYPE) {
+                params.boundaryType.selected = val;
+                sim.modify_boundaries(params);
+                params.t = 0.0;
+            }
+            if (c == params.PRESET_DISPERSION_RELATION) {
+                params.presetDispersionRelation.selected = val;
+                sim.reset_omega(params);
+            }
         };
     }
     size_t step_count = 0;
