@@ -8,3 +8,6 @@ program
 /**/imgui
 *.ini
 /**/Eigen
+*.png
+*.mp4
+/**/video_image_results

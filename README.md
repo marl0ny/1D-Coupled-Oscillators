@@ -1,6 +1,6 @@
 # 1D Coupled Harmonic Oscillators (WIP)
 
-[Visualization](https://marl0ny.github.io/1D-Coupled-Oscillators/compiled/) of a 1D chain of coupled quantum harmonic oscillators, both in terms of its untransformed positions and in decoupled normal coordinates. This is primarily based on an [AAPT article](https://doi.org/10.1119/1.1446858) by Scott Johnson and Thomas Gutierrez.
+[Visualization](https://marl0ny.github.io/1D-Coupled-Oscillators/compiled/) of a 1D chain of coupled quantum harmonic oscillators,  both in terms of its untransformed positions and in decoupled normal coordinates. This is primarily based on an [AAPT article](https://doi.org/10.1119/1.1446858) by Scott Johnson and Thomas Gutierrez.
 
 # References:
 
@@ -18,7 +18,7 @@ Chapter 7 of this book gives an overview of the 1D harmonic oscillator. See pg 1
 
 ### Metropolis algorithm
 
-See pg 429-430 of:
+An outline of this algorithm is given on pg 429-430 of:
 
 - Gould H., Tobochnik J., Christian W., "Numerical and Monte Carlo Methods,"
 in <i>An Introduction to Computer Simulation Methods</i>,

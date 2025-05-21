@@ -22,7 +22,7 @@ void oscillators(MainGLFWQuad main_render,
     Interactor interactor) {
     sim_2d::Simulation sim(params, window_width, window_height);
     {
-        s_sim_params_set = [&params, &sim](int c, Uniform u) {
+        s_sim_params_set = [&](int c, Uniform u) {
             if (c == params.SQUEEZED_FACTOR_GLOBAL) {
                 sim.set_relative_standard_deviation(1.0/u.f32);
                 if (params.useSqueezed)
@@ -36,8 +36,15 @@ void oscillators(MainGLFWQuad main_render,
         s_sim_params_get = [&params](int c) -> Uniform {
             return params.get(c);
         };
+        // s_sim_params_set_string = [&params, &sim](int c, int i, std::string s) {
+        //     params.set(c, i, s);
+        //     sim.modify_dispersion_with_user_input(
+        //         params, params.dispersionRelation[0]);
+        //     // display_parameters_as_sliders(c, {});
+        // };
         s_selection_set = [&params, &sim](
             int c, int val) {
+            printf("%d\n", c);
             if (c == params.DISPLAY_TYPE)
                 params.displayType.selected = val;
             if (c == params.CLICK_ACTION_NORMAL)
@@ -53,15 +60,14 @@ void oscillators(MainGLFWQuad main_render,
             }
         };
     }
-    size_t step_count = 0;
     start_gui(main_render.get_window());
     s_loop = [&] {
         sim.compute_configurations(params);
         main_render.draw(sim.render_view(params));
-        step_count++;
         params.t += params.dt;
+        params.stepCount++;
         Vec2 pos = interactor.get_mouse_position();
-        if (step_count % 3 == 0) {
+        if (params.stepCount % 3 == 0) {
             std::string text_content = "Acceptance rate: "
                 + std::to_string(100.0*params.acceptanceRate) 
                 + "% (33-50% ideal)";

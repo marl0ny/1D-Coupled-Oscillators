@@ -65,11 +65,12 @@ void imgui_controls(void *void_params) {
     if (ImGui::SliderInt("Number of oscillators", &params->numberOfOscillators, 8, 256))
             s_sim_params_set(params->NUMBER_OF_OSCILLATORS, params->numberOfOscillators);
     if (ImGui::BeginMenu("Boundary type")) {
-        if (ImGui::MenuItem( "Zero at endpoints")) params->boundaryType.selected = 0;
-        if (ImGui::MenuItem( "Periodic")) params->boundaryType.selected = 1;
+        if (ImGui::MenuItem( "Zero at endpoints"))
+            s_selection_set(params->BOUNDARY_TYPE, 0);
+        if (ImGui::MenuItem( "Periodic"))
+            s_selection_set(params->BOUNDARY_TYPE, 1);
         ImGui::EndMenu();
     }
-    s_selection_set(params->BOUNDARY_TYPE, params->boundaryType.selected);
     ImGui::Text("--------------------------------------------------------------------------------");
     ImGui::Text("Metropolis algorithm configuration");
     if (ImGui::SliderFloat("Relative step size", &params->relativeDelta, 0.0, 1.0))
@@ -96,12 +97,14 @@ void imgui_controls(void *void_params) {
     if (ImGui::SliderFloat("colorOfSamples2[2]", &params->colorOfSamples2.ind[2], 0.0, 1.0))
            s_sim_params_set(params->COLOR_OF_SAMPLES2, params->colorOfSamples2);
     if (ImGui::BeginMenu("Plot type")) {
-        if (ImGui::MenuItem( "Lines")) params->displayType.selected = 0;
-        if (ImGui::MenuItem( "Scatter")) params->displayType.selected = 1;
-        if (ImGui::MenuItem( "Multi-coloured histogram")) params->displayType.selected = 2;
+        if (ImGui::MenuItem( "Lines"))
+            s_selection_set(params->DISPLAY_TYPE, 0);
+        if (ImGui::MenuItem( "Scatter"))
+            s_selection_set(params->DISPLAY_TYPE, 1);
+        if (ImGui::MenuItem( "Multi-coloured histogram"))
+            s_selection_set(params->DISPLAY_TYPE, 2);
         ImGui::EndMenu();
     }
-    s_selection_set(params->DISPLAY_TYPE, params->displayType.selected);
     ImGui::Checkbox("Display samples in normal coordinates", &params->showNormalCoordSamples);
     ImGui::Text("--------------------------------------------------------------------------------");
     ImGui::Text("Normal mode analytic wave function display");
@@ -117,11 +120,12 @@ void imgui_controls(void *void_params) {
     ImGui::Text("(Will be difficult to differentiate any differences from the ground unless a large number of samples are used.)");
     ImGui::Text("If 'Coherent' or 'Squeezed' selected:");
     if (ImGui::BeginMenu("Behaviour when modifying a selected normal mode amplitude expectation value with the mouse cursor:")) {
-        if (ImGui::MenuItem( "Change selected; set others to zero")) params->clickActionNormal.selected = 0;
-        if (ImGui::MenuItem( "Modify selection only")) params->clickActionNormal.selected = 1;
+        if (ImGui::MenuItem( "Change selected while setting others to zero"))
+            s_selection_set(params->CLICK_ACTION_NORMAL, 0);
+        if (ImGui::MenuItem( "Modify selection only"))
+            s_selection_set(params->CLICK_ACTION_NORMAL, 1);
         ImGui::EndMenu();
     }
-    s_selection_set(params->CLICK_ACTION_NORMAL, params->clickActionNormal.selected);
     ImGui::Text("If 'Squeezed' selected:");
     if (ImGui::SliderFloat("Global squeezing factor (compared to coherent)", &params->squeezedFactorGlobal, 0.5, 10.0))
            s_sim_params_set(params->SQUEEZED_FACTOR_GLOBAL, params->squeezedFactorGlobal);
@@ -134,11 +138,13 @@ void imgui_controls(void *void_params) {
     ImGui::Text("--------------------------------------------------------------------------------");
     ImGui::Text("Dispersion relation options");
     if (ImGui::BeginMenu("Preset dispersion relation ω(k)")) {
-        if (ImGui::MenuItem( "2*sin((pi/2)*(abs(k)/k_max))")) params->presetDispersionRelation.selected = 0;
-        if (ImGui::MenuItem( "pi*(abs(k)/k_max)")) params->presetDispersionRelation.selected = 1;
+        if (ImGui::MenuItem( "2*sin((pi/2)*(abs(k)/k_max))"))
+            s_selection_set(params->PRESET_DISPERSION_RELATION, 0);
+        if (ImGui::MenuItem( "pi*(abs(k)/k_max)"))
+            s_selection_set(params->PRESET_DISPERSION_RELATION, 1);
         ImGui::EndMenu();
     }
-    s_selection_set(params->PRESET_DISPERSION_RELATION, params->presetDispersionRelation.selected);
+    ImGui::Checkbox("Take screenshots", &params->imageRecord);
 
 }
 

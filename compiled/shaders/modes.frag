@@ -136,12 +136,6 @@ complex stationaryState(
         pow(m*omega/(PI*hbar), 0.25)
         * (1.0/pow(2.0, 2.0*float(n)/4.0))
         * (1.0/pow(factorial(float(n)), 0.5));
-    // float norm_factor = pow(
-    //     m*omega / 
-    //     (PI*hbar*pow(2.0, 2.0*float(n))
-    //      *pow(float(factorial(float(n))), 2.0)
-    //     ),
-    //     0.25);
     float absVal = (normFactor*hermite(n, x*sqrt(m*omega/hbar)))
         *exp(-0.5*m*omega*x*x/hbar);
     #if (__VERSION__ > 130)

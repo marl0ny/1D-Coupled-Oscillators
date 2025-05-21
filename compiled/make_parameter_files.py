@@ -265,6 +265,7 @@ def write_sliders_js(parameters, dst_file_name):
     file_contents = ""
     file_contents += SLIDER_JS_START
     file_contents += "let controls = document.getElementById('controls');\n"
+    parameters = {k: parameters[k] for k in parameters if k[0:2] != '__'}
     for i, k in enumerate(parameters.keys()):
         parameter = parameters[k]
         type_ = parameter["type"]
@@ -413,12 +414,15 @@ def write_typed_sim_parameters_hpp(parameters, name_space, dst_file_name):
     file_contents += "\n#ifndef _PARAMETERS_\n#define _PARAMETERS_\n"
     file_contents += "\nstruct Button {};\n"
     file_contents += "\ntypedef std::string Label;\n"
+    file_contents += "\ntypedef bool BoolRecord;\n"
     file_contents += "\ntypedef std::vector<std::string> EntryBoxes;\n"
     file_contents += "\nstruct SelectionList {\n"
     file_contents += "    int selected;\n"
     file_contents += "    std::vector<std::string> options;\n};\n"
     file_contents += "\nstruct SimParams {\n"
     file_contents += "\nstruct LineDivider {};\n"
+    file_contents += "\nstruct NotUsed {};\n"
+    parameters = {k: parameters[k] for k in parameters if k[0:2] != '__'}
     for k in parameters.keys():
         parameter = parameters[k]
         type_ = parameter["type"]
@@ -606,11 +610,13 @@ IMGUI_TEXT = \
 """
 
 IMGUI_MENU = \
-"""    if (ImGui::MenuItem({})) params->{}.selected = {};
+"""    if (ImGui::MenuItem({}))
+            s_selection_set({}, {});
 """
 
 def write_imgui_controls(
         parameters, param_namespace, param_header, dst_file_name):
+    parameters = {k: parameters[k] for k in parameters if k[0:2] != '__'}
     file_contents = ""
     file_contents \
         += IMGUI_CONTROLS_START.format(param_header, param_namespace)
@@ -654,6 +660,8 @@ def write_imgui_controls(
                     "params->" + k)
         if 'bool' in type_:
             file_contents += IMGUI_CHECKBOX.format(name, k)
+        if 'BoolRecord' in type_:
+            file_contents += IMGUI_CHECKBOX.format(name, k)
         if 'Label' in type_:
             file_contents += IMGUI_TEXT.format(name)
         if 'LineDivider' in type_:
@@ -669,16 +677,18 @@ def write_imgui_controls(
             #     += f"        sel_{k}[i] = (i == params->{k}.selected);\n"
             file_contents += "    if (ImGui::BeginMenu(\"{}\")) {{\n".format(name)
             for i, e in enumerate(list_val):
-                file_contents += "    " + IMGUI_MENU.format(e, k, i)
+                file_contents += "    " + IMGUI_MENU.format(
+                    e, f"params->{camel_to_snake(k, True)}", i
+                )
             file_contents += "        ImGui::EndMenu();\n"
             file_contents += "    }\n"
             # file_contents \
             #     += f"    for (int i = 0; i < {len(list_val)}; i++)\n"
             # file_contents \
             #     += f"        if (sel_{k}[i]) params->{k}.selected = i;\n"
-            file_contents \
-                += (f"    s_selection_set(params->{camel_to_snake(k, True)},"
-                     + f" params->{k}.selected);\n")
+            # file_contents \
+            #     += (f"    s_selection_set(params->{camel_to_snake(k, True)},"
+            #          + f" params->{k}.selected);\n")
     file_contents += IMGUI_CONTROLS_END
     with open(dst_file_name, "w") as f:
         f.write(file_contents)

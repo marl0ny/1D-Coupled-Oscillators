@@ -50,7 +50,7 @@ ${TARGET}: ${OBJECTS} ${IMGUI_OBJECTS}
 
 ${WEB_TARGET}: ${SOURCES} ${GENERATED_DEPENDENCIES}
 	emcc -lembind -o $@ ${SOURCES} ${INCLUDE} -O3 -v -s WASM=2 -s USE_GLFW=3 -s FULL_ES3=1 \
-	-s TOTAL_MEMORY=500MB -s LLD_REPORT_UNDEFINED --embed-file shaders
+	-s TOTAL_MEMORY=600MB -s LLD_REPORT_UNDEFINED --embed-file shaders
 
 ${IMGUI_SOURCES}:
 	wget "https://github.com/ocornut/imgui/archive/refs/heads/master.zip"

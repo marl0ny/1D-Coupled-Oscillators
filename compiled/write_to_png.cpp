@@ -4,6 +4,12 @@
 #include <stdio.h>
 
 
+/*For writing a png file using the PNG library, see the examples
+from this resource:
+
+    www.libpng.org/pub/png/libpng-1.2.5-manual.html#section4
+
+*/
 int write_rgb8_png(const char *fname,
                    unsigned char *data, int width, int height) {
     png_struct *write_ptr

@@ -4,6 +4,8 @@
 #include "configs_view.hpp"
 #include "metropolis.hpp"
 #include "histogram.hpp"
+#include "parse.hpp"
+#include "write_to_png.hpp"
 #include "orthogonal_transforms.hpp"
 #include <complex>
 #include <vector>
@@ -53,16 +55,23 @@ static WireFrame get_quad_wire_frame() {
     );
 }
 
+static void frequency_index_and_its_max(
+    int &frequency_index, int &max_frequency, 
+    int i, int n, int boundary_type) {
+    enum {ZERO_ENDPOINTS=0, PERIODIC=1};
+    if (boundary_type == PERIODIC) {
+        frequency_index = (n % 2)? (i - n/2): (i - n/2 + 1);
+        max_frequency = n/2;
+    } else {
+        frequency_index = i + 1;
+        max_frequency = n + 1;
+    }
+}
+
 static double get_omega(int i, int n, int boundary_type, int preset) {
     enum {ZERO_ENDPOINTS=0, PERIODIC=1};
     int k, size; 
-    if (boundary_type == PERIODIC) {
-        k = (n % 2)? (i - n/2): (i - n/2 + 1);
-        size = n/2;
-    } else {
-        k = i + 1;
-        size = n + 1;
-    }
+    frequency_index_and_its_max(k, size, i, n, boundary_type);
     if (preset == 0)
         return 2.0*sin(0.5*PI*abs(k)/size);
     else
@@ -77,6 +86,17 @@ Frames::Frames(const SimParams &sim_params,
     view_tex_params(
         {
             .format=GL_RGBA32F,
+            .width=(uint32_t)view_width,
+            .height=(uint32_t)view_height,
+            .wrap_s=GL_CLAMP_TO_EDGE,
+            .wrap_t=GL_CLAMP_TO_EDGE,
+            .min_filter=FILTER_TYPE,
+            .mag_filter=FILTER_TYPE,
+        }
+    ),
+    image_tex_params(
+        {
+            .format=GL_RGB8,
             .width=(uint32_t)view_width,
             .height=(uint32_t)view_height,
             .wrap_s=GL_CLAMP_TO_EDGE,
@@ -123,6 +143,7 @@ Frames::Frames(const SimParams &sim_params,
     tmp(configs_view_tex_params),
     initial_values(initial_values_tex_params),
     hist(hist_tex_params),
+    image(image_tex_params),
     configs_view(configs_view_tex_params),
     view(view_tex_params),
     quad_wire_frame(get_quad_wire_frame())
@@ -148,8 +169,12 @@ Simulation::Simulation(
     int n = sim_params.numberOfOscillators;
     m_configs = Arr1D(
         sim_params.numberOfMCSteps*n);
+    m_configs.reserve(100000*MAX_SIZE/2);
     m_positions2normals = Arr1D(n*n);
+    // m_positions2normals.reserve(MAX_SIZE*MAX_SIZE);
     m_normals2positions = Arr1D(n*n);
+    // m_omega = Arr1D(MAX_SIZE, 0.0);
+    // m_normals2positions.reserve(MAX_SIZE*MAX_SIZE);
     this->reset_coord_transform(sim_params);
     this->reset_omega(sim_params);
     Arr1D tmp (n);
@@ -179,13 +204,15 @@ Simulation::compute_stationary_state_configurations(SimParams &sim_params) {
     };
     auto delta = Arr1D(n_count);
     auto x = Arr1D(n_count);
-    std::vector<float> initial_values_pixels {};
     for (int i = 0; i < n_count; i++) {
         data.excitations[i] = m_initial_wave_func.excitations[i];
         double omega = m_omega[i];
         data.omega[i] = omega;
         delta[i] = (1.0 + data.excitations[i])
             *sim_params.relativeDelta*coherent_standard_dev(1.0, omega, 1.0);
+    }
+    std::vector<float> initial_values_pixels {};
+    for (int i = 0; i < n_count; i++) {
         initial_values_pixels.push_back(float(data.excitations[i]));
         initial_values_pixels.push_back(0.0);
         initial_values_pixels.push_back(data.omega[i]);
@@ -523,6 +550,16 @@ const RenderTarget &Simulation::render_view(
                 {"scale", 1.0F}},
         m_frames.quad_wire_frame
     );
+    #ifndef __EMSCRIPTEN__
+    if (sim_params.imageRecord) {
+        m_frames.image.draw(
+            m_programs.copy, {{"tex", &m_frames.view}});
+        auto pixels = m_frames.image.get_byte_pixels();
+        std::string fname = std::to_string(sim_params.stepCount) + ".png";
+        write_rgb8_png(&fname[0],
+            &pixels[0], m_frames.image.width(), m_frames.image.height());
+    }
+    #endif
     return m_frames.view;
 }
 
@@ -697,4 +734,48 @@ void Simulation::cursor_set_initial_wave_function(
 void Simulation::set_relative_standard_deviation(float val) {
     for (int i = 0; i < 512; i++)
         m_initial_wave_func.s[i] = val;
+    // printf("%g\n", m_initial_wave_func.s[0]);
 }
+
+const GLSLPrograms &Simulation::get_programs() {
+    return m_programs;
+}
+
+Frames &Simulation::get_frames() {
+    return m_frames;
+}
+
+const std::vector<double> &Simulation::get_configs() {
+    return m_configs;
+}
+
+// #include <iostream>
+
+// void Simulation::modify_dispersion_with_user_input(
+//     const SimParams &sim_params, const std::string &s) {
+//     std::vector<std::string> expr_stack, rpn_list;
+//     try {
+//         expr_stack = get_expression_stack(s);
+//         rpn_list = shunting_yard(expr_stack);
+//     } catch(...) {
+//         return;
+//     }
+//     Arr1D omega(sim_params.numberOfOscillators);
+//     for (auto &e: rpn_list)
+//         std::cout << e << std::endl;
+//     for (int i = 0; i < sim_params.numberOfOscillators; i++) {
+//         int k, size; 
+//         frequency_index_and_its_max(
+//             k, size, i, 
+//             sim_params.numberOfOscillators, 
+//             sim_params.boundaryType.selected);
+//         try {
+//             omega[i] = compute_expression(rpn_list, {
+//                 {{"k", k}, {"k_max", size}}});
+//         } catch (...) {
+//             return;
+//         }
+//     }
+//     for (int i = 0; i < sim_params.numberOfOscillators; i++)
+//         m_omega[i] = omega[i];
+// }

@@ -11,5 +11,3 @@ void histogram::add_data_point(
     if (ind >= 0 && ind < hist.arr.size())
         hist.arr[ind] += val;
 }
-
-

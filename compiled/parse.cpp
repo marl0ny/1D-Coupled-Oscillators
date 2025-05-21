@@ -378,6 +378,11 @@ static T deque(vector<T> &v) {
     return val;
 }
 
+static bool is_a_letter_or_number(char c) {
+    return (is_single_character_number(c)
+         || is_decimal_point(c) || is_a_letter(c));
+}
+
 double compute_rpn_expression(
     vector<string> rpn_list, map<string, double> variables) {
     vector<string> rpn_stack {};
@@ -386,8 +391,16 @@ double compute_rpn_expression(
         if (is_single_character_number(e[0]) || is_decimal_point(e[0])) {
             rpn_stack.push_back(e);
         } else if (is_single_character_op(e[0])) {
+            if (rpn_stack.size() > 0 
+	        && !(is_single_character_number(rpn_stack.back().c_str()[0]) 
+                || is_decimal_point(rpn_stack.back().c_str()[0])))
+                return 0.0;
             double r_val = std::stod(rpn_stack.back().c_str());
             rpn_stack.pop_back();
+            if (rpn_stack.size() > 0 && 
+		!(is_single_character_number(rpn_stack.back().c_str()[0]) 
+                || is_decimal_point(rpn_stack.back().c_str()[0])))
+                return 0.0;
             double l_val = std::stod(rpn_stack.back().c_str());
             rpn_stack.pop_back();
             double val = 0.0;
@@ -425,6 +438,18 @@ double compute_rpn_expression(
     return std::atof(rpn_stack.back().c_str());
 }
 
+double compute_expression(
+    const std::string &input, std::map<std::string, double> variables) {
+    auto rpn_list = shunting_yard(get_expression_stack(input));
+    return compute_rpn_expression(rpn_list, variables);
+}
+
+double compute_expression(
+    const std::vector<std::string> &rpn_list, 
+    std::map<std::string, double> variables) {
+    return compute_rpn_expression(rpn_list, variables);
+}
+
 string turn_rpn_expression_to_glsl_expression_string(
     vector<string> rpn_list) {
     if (rpn_list.size() == 0)
@@ -460,7 +485,6 @@ string turn_rpn_expression_to_glsl_expression_string(
                 break;
                 case '/':
                 val = "div(" + l_val + ", " + r_val + ")";
-                break;
                 case '^':
                 val = "powC(" + l_val + ", " + r_val + ")";
                 break;

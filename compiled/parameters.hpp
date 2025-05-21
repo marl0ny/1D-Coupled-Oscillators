@@ -9,6 +9,8 @@ struct Button {};
 
 typedef std::string Label;
 
+typedef bool BoolRecord;
+
 typedef std::vector<std::string> EntryBoxes;
 
 struct SelectionList {
@@ -19,9 +21,12 @@ struct SelectionList {
 struct SimParams {
 
 struct LineDivider {};
+
+struct NotUsed {};
     int stepsPerFrame = (int)(1);
     float dt = (float)(0.1F);
     float t = (float)(0.0F);
+    int stepCount = (int)(0);
     int numberOfOscillators = (int)(64);
     SelectionList boundaryType = SelectionList{0, {"Zero at endpoints", "Periodic"}};
     LineDivider lineDivMonteCarlo = LineDivider{};
@@ -49,7 +54,7 @@ struct LineDivider {};
     bool useSingleExcitations = (bool)(false);
     Label noteForUseSingleExcitations = Label{};
     Label coherentOrSqueezedSelectedLabel = Label{};
-    SelectionList clickActionNormal = SelectionList{0, {"Change selected; set others to zero", "Modify selection only"}};
+    SelectionList clickActionNormal = SelectionList{0, {"Change selected while setting others to zero", "Modify selection only"}};
     Label squeezedSelectedLabel = Label{};
     float squeezedFactorGlobal = (float)(1.0F);
     float squeezedFactor = (float)(1.0F);
@@ -60,50 +65,51 @@ struct LineDivider {};
     LineDivider lineDivAdditionalOptions = LineDivider{};
     Label DispersionOptionsLabel = Label{};
     SelectionList presetDispersionRelation = SelectionList{0, {"2*sin((pi/2)*(abs(k)/k_max))", "pi*(abs(k)/k_max)"}};
-    EntryBoxes dispersionRelation = EntryBoxes{"2*sin(pi/2*(k + 1)/(n + 1))"};
+    BoolRecord imageRecord = BoolRecord{false};
     enum {
         STEPS_PER_FRAME=0,
         DT=1,
         T=2,
-        NUMBER_OF_OSCILLATORS=3,
-        BOUNDARY_TYPE=4,
-        LINE_DIV_MONTE_CARLO=5,
-        LABEL_MONTE_CARLO=6,
-        RELATIVE_DELTA=7,
-        ACCEPTANCE_RATE_LABEL=8,
-        ACCEPTANCE_RATE=9,
-        NUMBER_OF_M_C_STEPS=10,
-        LINE_DIV_SAMPLE_COLOR=11,
-        LABEL_SAMPLES=12,
-        ALPHA_BRIGHTNESS=13,
-        COLOR_OF_SAMPLES1=14,
-        COLOR_OF_SAMPLES2=15,
-        DISPLAY_TYPE=16,
-        SHOW_NORMAL_COORD_SAMPLES=17,
-        LINE_DIV_NORMAL_MODE_WAVE_FUNC=18,
-        LABEL_NORMAL_MODE_WAVE_FUNC=19,
-        COLOR_PHASE=20,
-        MODES_BRIGHTNESS=21,
-        LINE_DIV_WAVE_FUNC_OPTIONS=22,
-        WAVE_FUNC_CONFIG_LABEL=23,
-        USE_COHERENT_STATES=24,
-        USE_SQUEEZED=25,
-        USE_STATIONARY=26,
-        USE_SINGLE_EXCITATIONS=27,
-        NOTE_FOR_USE_SINGLE_EXCITATIONS=28,
-        COHERENT_OR_SQUEEZED_SELECTED_LABEL=29,
-        CLICK_ACTION_NORMAL=30,
-        SQUEEZED_SELECTED_LABEL=31,
-        SQUEEZED_FACTOR_GLOBAL=32,
-        SQUEEZED_FACTOR=33,
-        SQUEEZED_STATE_REL_ST_DEV_LABEL=34,
-        ENERGY_EIGENSTATES_SELECTED_LABEL=35,
-        ADD_ENERGY=36,
-        REMOVE_ENERGY=37,
-        LINE_DIV_ADDITIONAL_OPTIONS=38,
-        DISPERSION_OPTIONS_LABEL=39,
-        PRESET_DISPERSION_RELATION=40,
-        DISPERSION_RELATION=41,
+        STEP_COUNT=3,
+        NUMBER_OF_OSCILLATORS=4,
+        BOUNDARY_TYPE=5,
+        LINE_DIV_MONTE_CARLO=6,
+        LABEL_MONTE_CARLO=7,
+        RELATIVE_DELTA=8,
+        ACCEPTANCE_RATE_LABEL=9,
+        ACCEPTANCE_RATE=10,
+        NUMBER_OF_M_C_STEPS=11,
+        LINE_DIV_SAMPLE_COLOR=12,
+        LABEL_SAMPLES=13,
+        ALPHA_BRIGHTNESS=14,
+        COLOR_OF_SAMPLES1=15,
+        COLOR_OF_SAMPLES2=16,
+        DISPLAY_TYPE=17,
+        SHOW_NORMAL_COORD_SAMPLES=18,
+        LINE_DIV_NORMAL_MODE_WAVE_FUNC=19,
+        LABEL_NORMAL_MODE_WAVE_FUNC=20,
+        COLOR_PHASE=21,
+        MODES_BRIGHTNESS=22,
+        LINE_DIV_WAVE_FUNC_OPTIONS=23,
+        WAVE_FUNC_CONFIG_LABEL=24,
+        USE_COHERENT_STATES=25,
+        USE_SQUEEZED=26,
+        USE_STATIONARY=27,
+        USE_SINGLE_EXCITATIONS=28,
+        NOTE_FOR_USE_SINGLE_EXCITATIONS=29,
+        COHERENT_OR_SQUEEZED_SELECTED_LABEL=30,
+        CLICK_ACTION_NORMAL=31,
+        SQUEEZED_SELECTED_LABEL=32,
+        SQUEEZED_FACTOR_GLOBAL=33,
+        SQUEEZED_FACTOR=34,
+        SQUEEZED_STATE_REL_ST_DEV_LABEL=35,
+        ENERGY_EIGENSTATES_SELECTED_LABEL=36,
+        ADD_ENERGY=37,
+        REMOVE_ENERGY=38,
+        LINE_DIV_ADDITIONAL_OPTIONS=39,
+        DISPERSION_OPTIONS_LABEL=40,
+        PRESET_DISPERSION_RELATION=41,
+        IMAGE_RECORD=42,
     };
     void set(int enum_val, Uniform val) {
         switch(enum_val) {
@@ -115,6 +121,9 @@ struct LineDivider {};
             break;
             case T:
             t = val.f32;
+            break;
+            case STEP_COUNT:
+            stepCount = val.i32;
             break;
             case NUMBER_OF_OSCILLATORS:
             numberOfOscillators = val.i32;
@@ -180,6 +189,8 @@ struct LineDivider {};
             return {(float)dt};
             case T:
             return {(float)t};
+            case STEP_COUNT:
+            return {(int)stepCount};
             case NUMBER_OF_OSCILLATORS:
             return {(int)numberOfOscillators};
             case RELATIVE_DELTA:
@@ -253,9 +264,6 @@ struct LineDivider {};
             break;
             case DISPERSION_OPTIONS_LABEL:
             DispersionOptionsLabel = val;
-            break;
-            case DISPERSION_RELATION:
-            dispersionRelation[index] = val;
             break;
         }
     }
