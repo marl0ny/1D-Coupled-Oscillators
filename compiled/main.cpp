@@ -62,7 +62,10 @@ void oscillators(MainGLFWQuad main_render,
     }
     start_gui(main_render.get_window());
     s_loop = [&] {
-        sim.compute_configurations(params);
+        MetropolisResultInfo info = sim.compute_configurations(params);
+        params.acceptanceRate
+            = float(info.accepted_count)
+            / float(info.accepted_count + info.rejection_count);
         main_render.draw(sim.render_view(params));
         params.t += params.dt;
         params.stepCount++;

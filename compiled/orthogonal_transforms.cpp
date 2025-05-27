@@ -44,6 +44,24 @@ void make_dsct(std::vector<double> &dsct, std::vector<double> &idsct, int n) {
     }
 }
 
+void make_dst(std::vector<float> &dst, std::vector<float> &idst, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            dst[i*n + j] = dst_element(i, j, n);
+            idst[j*n + i] = dst[i*n + j];
+        }
+    }
+}
+
+void make_dsct(std::vector<float> &dsct, std::vector<float> &idsct, int n) {
+    for (int j = 0; j < n; j++) {
+        for (int i = 0; i < n; i++) {
+            dsct[j*n + i] = dsct_element(i, j, n);
+            idsct[i*n + j] = dsct[j*n + i];
+        }
+    }
+}
+
 std::vector<double> apply_transform(
     const std::vector<double> &transform, const std::vector<double> &x) {
     std::vector<double> res (x.size());

@@ -2,7 +2,6 @@
 #include "harmonic.hpp"
 #include "multidimensional_harmonic.hpp"
 #include "configs_view.hpp"
-#include "metropolis.hpp"
 #include "histogram.hpp"
 #include "parse.hpp"
 #include "write_to_png.hpp"
@@ -195,7 +194,25 @@ Simulation::Simulation(
 }
 
 void
-Simulation::compute_stationary_state_configurations(SimParams &sim_params) {
+Simulation::load_initial_values_texture(const SimParams &sim_params) {
+    std::vector<float> initial_values_pixels {};
+    int n = sim_params.numberOfOscillators;
+    for (int i = 0; i < n; i++) {
+        if (sim_params.useStationary)
+            initial_values_pixels.push_back(
+                m_initial_wave_func.excitations[i]);
+        else if (sim_params.useCoherentStates || sim_params.useSqueezed)
+            initial_values_pixels.push_back(m_initial_wave_func.x[i]);
+        initial_values_pixels.push_back(m_initial_wave_func.p[i]);
+        initial_values_pixels.push_back(m_omega[i]);
+        double sigma = coherent_standard_dev(1.0, m_omega[i], 1.0);
+        initial_values_pixels.push_back(sigma*m_initial_wave_func.s[i]);
+    }
+    m_frames.initial_values.set_pixels(initial_values_pixels);
+}
+
+MetropolisResultInfo
+Simulation::compute_stationary_state_configurations(const SimParams &sim_params) {
     int n_count = sim_params.numberOfOscillators;
     StationaryStatesProdData data = {
         .t=sim_params.t, .m=1.0, .hbar=1.0,
@@ -219,17 +236,14 @@ Simulation::compute_stationary_state_configurations(SimParams &sim_params) {
         initial_values_pixels.push_back(0.0);   
     }
     m_frames.initial_values.set_pixels(initial_values_pixels);
-    auto info = metropolis(
+    return metropolis(
         m_configs, x, delta, 
         stationary_states_prod_dist_func,
         sim_params.numberOfMCSteps, (void *)&data);
-    sim_params.acceptanceRate
-            = float(info.accepted_count)
-            / float(info.accepted_count + info.rejection_count);
 }
 
-void 
-Simulation::compute_coherent_state_configurations(SimParams &sim_params) {
+MetropolisResultInfo
+Simulation::compute_coherent_state_configurations(const SimParams &sim_params) {
     int n = sim_params.numberOfOscillators;
     CoherentStateProdData data = {
         .t=sim_params.t, .hbar=1.0, .m=1.0,
@@ -243,27 +257,24 @@ Simulation::compute_coherent_state_configurations(SimParams &sim_params) {
         data.p0[i] = m_initial_wave_func.p[i];
         double omega = m_omega[i];
         data.omega[i] = omega;
-        delta[i] 
-            = sim_params.relativeDelta*coherent_standard_dev(1.0, omega, 1.0);
+        double sigma = coherent_standard_dev(1.0, omega, 1.0);
+        delta[i] = sim_params.relativeDelta*sigma;
         x[i] = squeezed_avg_x(
             data.t, data.x0[i], data.p0[i], 1.0, data.omega[i], 1.0);
         initial_values_pixels.push_back(data.x0[i]);
         initial_values_pixels.push_back(data.p0[i]);
         initial_values_pixels.push_back(data.omega[i]);
-        initial_values_pixels.push_back(0.0);
+        initial_values_pixels.push_back(sigma);
     }
     m_frames.initial_values.set_pixels(initial_values_pixels);
-    auto info = metropolis(
+    return metropolis(
         m_configs, x, delta, 
         coherent_state_prod_dist_func,
         sim_params.numberOfMCSteps, (void *)&data);
-    sim_params.acceptanceRate
-            = float(info.accepted_count)
-            / float(info.accepted_count + info.rejection_count);
 }
 
-void 
-Simulation::compute_squeezed_state_configurations(SimParams &sim_params) {
+MetropolisResultInfo
+Simulation::compute_squeezed_state_configurations(const SimParams &sim_params) {
     int n = sim_params.numberOfOscillators;
     SqueezedStateProdData data = {
         .t=sim_params.t, .m=1.0, .hbar=1.0, 
@@ -290,17 +301,14 @@ Simulation::compute_squeezed_state_configurations(SimParams &sim_params) {
         initial_values_pixels.push_back(data.sigma0[i]);
     }
     m_frames.initial_values.set_pixels(initial_values_pixels);
-    auto info = metropolis(
+    return metropolis(
         m_configs, x, delta, 
         squeezed_state_prod_dist_func,
         sim_params.numberOfMCSteps, (void *)&data);
-    sim_params.acceptanceRate
-            = float(info.accepted_count)
-            / float(info.accepted_count + info.rejection_count);
 }
 
-void Simulation::
-compute_single_excitations_configurations(SimParams &sim_params) {
+MetropolisResultInfo Simulation::
+compute_single_excitations_configurations(const SimParams &sim_params) {
     int n = sim_params.numberOfOscillators;
     auto delta = Arr1D(n);
     auto x = Arr1D(n);
@@ -318,27 +326,26 @@ compute_single_excitations_configurations(SimParams &sim_params) {
         delta[i] = sim_params.relativeDelta*sigma;
     }
     m_frames.initial_values.set_pixels(initial_values_pixels);
-    auto info = metropolis(
+    return metropolis(
         m_configs, x, delta, 
         single_excitations_sum_dist_func,
         sim_params.numberOfMCSteps, (void *)&data);
-    sim_params.acceptanceRate
-            = float(info.accepted_count)
-            / float(info.accepted_count + info.rejection_count);
 }
 
-void Simulation::compute_configurations(SimParams &sim_params) {
+MetropolisResultInfo 
+Simulation::compute_configurations(const SimParams &sim_params) {
+    MetropolisResultInfo info;
     if (sim_params.useCoherentStates)
-        this->compute_coherent_state_configurations(sim_params);
+        info = this->compute_coherent_state_configurations(sim_params);
     else if (sim_params.useSqueezed)
-        this->compute_squeezed_state_configurations(sim_params);
+        info = this->compute_squeezed_state_configurations(sim_params);
     else if (sim_params.useStationary)
-        this->compute_stationary_state_configurations(sim_params);
+        info = this->compute_stationary_state_configurations(sim_params);
     else if (sim_params.useSingleExcitations)
-        this->compute_single_excitations_configurations(sim_params);
+        info = this->compute_single_excitations_configurations(sim_params);
     else
-        this->compute_coherent_state_configurations(sim_params);
-
+        info = this->compute_coherent_state_configurations(sim_params);
+    return info;
 }
 
 static int get_wave_func_type(const SimParams &sim_params) {
